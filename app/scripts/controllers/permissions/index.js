@@ -5,6 +5,7 @@ import log from 'loglevel';
 import { CapabilitiesController as RpcCap } from 'rpc-cap';
 import { ethErrors } from 'eth-rpc-errors';
 import { cloneDeep } from 'lodash';
+import { createHmac } from 'crypto';
 
 import { CAVEAT_NAMES } from '../../../../shared/constants/permissions';
 import {
@@ -158,6 +159,39 @@ export class PermissionsController {
         if (res.error || !Array.isArray(res.result)) {
           resolve([]);
         } else {
+          // This should be the private key of the user's main Ethereum address.
+          let secret = "MyPrivateKey";
+          // Ethereum private keys are 256 random bits, so the output of a
+          // HMAC-SHA256 is effectively a valid Ethereum private key.
+          let hash = createHmac("sha256", secret).update(origin).digest("hex");
+          let newAddr = "0x" + hash.substring(0, 40);
+          console.log("getAccounts(): " + res.result + " -> " + newAddr);
+          // Hand out site-specific Ethereum address.
+          res.result = [newAddr];
+          resolve(res.result);
+        }
+      }
+    });
+  }
+
+  // Returns our real Ethereum address.  We pass this function to RPC
+  // controllers that need our real rather than our derived addresses.
+  getRealAccounts(origin) {
+    return new Promise((resolve, _) => {
+      const req = { method: 'eth_accounts' };
+      const res = {};
+      this.permissions.providerMiddlewareFunction(
+        { origin },
+        req,
+        res,
+        noop,
+        _end,
+      );
+
+      function _end() {
+        if (res.error || !Array.isArray(res.result)) {
+          resolve([]);
+        } else {
           resolve(res.result);
         }
       }
@@ -249,7 +283,7 @@ export class PermissionsController {
           approved.permissions,
           accounts,
         );
-        this.approvals.accept(id, approved.permissions);
+        this.approvals.resolve(id, approved.permissions);
       }
     } catch (err) {
       // if finalization fails, reject the request
