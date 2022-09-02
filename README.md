@@ -4,8 +4,8 @@ This GitHub action updates meta releases, called _download releases_, to always 
 
 ## Principle
 
-The action scans for published non-draft releases with tags `vX.Y.Z`, find the latest for each major `X` version, and ensure the related _download release_ tagged `download-latest_vX` refers to the latest version.
-If not, it downloads the `dd-java-agent.jar `attachment from the latest version, upload it to the _download release_ and update its body to refers to the latest version.
+The action scans for published non-draft releases with tags `vX.Y.Z`, find the latest for each major `X` version, and ensure the related _download releases_ tagged `download-latest_vX` and `download-latest` refer to their latest versions.
+If not, it downloads the `dd-java-agent.jar `attachment from the latest version, upload it to the _download releases_ and update their bodies to refer to their latest versions.
 
 ## Usage
 
@@ -50,6 +50,5 @@ $ npm run build && npm run package
 
 Run the tests :heavy_check_mark:  
 ```
-export GITHUB_REPOSITORY="owner/repo"
 $ npm test
 ```
