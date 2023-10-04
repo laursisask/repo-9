@@ -33,7 +33,7 @@ def test_request_export_backoff_on_timeout(mock_sleep, mixpanel_client):
 @mock.patch('time.sleep', return_value=None)
 def test_request_export_backoff_on_remote_timeout(mock_sleep, mixpanel_client, status_code, exception, response_json):
     with requests_mock.Mocker() as m:
-        m.request('GET', 'http://test.com', content=None, json=response_json, status_code=status_code)
+        m.request('GET', 'http://test.com', text=None, json=response_json, status_code=status_code)
         result = mixpanel_client.request_export('GET', url='http://test.com')
 
         with raises(exception) as ex:
