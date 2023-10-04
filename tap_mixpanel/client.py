@@ -20,11 +20,11 @@ class Server5xxError(Exception):
     pass
 
 
-class Server429Error(Exception):
+class MixpanelError(Exception):
     pass
 
 
-class MixpanelError(Exception):
+class MixpanelRateLimitsError(MixpanelError):
     pass
 
 
@@ -58,6 +58,7 @@ ERROR_CODE_EXCEPTION_MAPPING = {
     402: MixpanelRequestFailedError,
     403: MixpanelForbiddenError,
     404: MixpanelNotFoundError,
+    429: MixpanelRateLimitsError,
     500: MixpanelInternalServiceError}
 
 
@@ -66,7 +67,7 @@ def get_exception_for_error_code(error_code):
 
 def raise_for_error(response):
     if response.status_code != 400:
-        LOGGER.warn('STATUS {}: {}, REASON: {}'.format(response.status_code,\
+        LOGGER.warn('STATUS {}: {}, REASON: {}'.format(response.status_code,
             response.text, response.reason))
 
     try:
@@ -117,7 +118,7 @@ class MixpanelClient(object):
 
 
     @backoff.on_exception(backoff.expo,
-                          (Server5xxError, Server429Error, ReadTimeoutError, ConnectionError),
+                          (Server5xxError, MixpanelRateLimitsError, ReadTimeoutError, ConnectionError),
                           max_tries=5,
                           factor=2)
     def check_access(self):
@@ -171,7 +172,7 @@ class MixpanelClient(object):
 
     @backoff.on_exception(
         backoff.expo,
-        (Server429Error, ReadTimeoutError, ConnectionError, HTTPError),
+        (MixpanelRateLimitsError, Server5xxError, ReadTimeoutError, ConnectionError, HTTPError),
         max_tries=BACKOFF_MAX_TRIES_REQUEST,
         factor=3, 
         logger=LOGGER)
