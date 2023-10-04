@@ -24,15 +24,14 @@ def test_request_export_backoff_on_timeout(mock_sleep, mixpanel_client):
 
 
 @pytest.mark.parametrize(
-    'status_code,exception,response_json,backoff_retry_count',
+    'status_code,exception,response_json',
     [
-        pytest.param(504, Server5xxError, None, client.BACKOFF_MAX_TRIES_REQUEST - 1, id="Server5xxError"),
-        pytest.param(429, MixpanelRateLimitsError, {'error': 'Too Many Requests', 'status': 429}, 6, id="MixpanelRateLimitsError"),
+        pytest.param(504, Server5xxError, None, id="Server5xxError"),
+        pytest.param(429, MixpanelRateLimitsError, {'error': 'Too Many Requests', 'status': 429}, id="MixpanelRateLimitsError"),
     ],
 )
 @mock.patch('time.sleep', return_value=None)
-def test_request_export_backoff_on_remote_timeout(mock_sleep, mixpanel_client, status_code, exception, response_json,
-                                                  backoff_retry_count):
+def test_request_export_backoff_on_remote_timeout(mock_sleep, mixpanel_client, status_code, exception, response_json):
     with requests_mock.Mocker() as m:
         m.request('GET', 'http://test.com', content=None, json=response_json, status_code=status_code)
         result = mixpanel_client.request_export('GET', url='http://test.com')
@@ -41,7 +40,7 @@ def test_request_export_backoff_on_remote_timeout(mock_sleep, mixpanel_client, s
             for record in result:
                 pass
         # Assert backoff retry count as expected    
-        assert mock_sleep.call_count == backoff_retry_count
+        assert mock_sleep.call_count == client.BACKOFF_MAX_TRIES_REQUEST - 1
 
 @mock.patch('time.sleep', return_value=None)
 def test_request_backoff_on_timeout(mock_sleep, mixpanel_client):
