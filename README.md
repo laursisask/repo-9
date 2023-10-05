@@ -356,4 +356,4 @@ without saving
 **Documentation**: https://git.epam.com/epmc-eoos/m3-modular-admin/-/blob/master/README.md  
 **Changelog**: https://git.epam.com/epmc-eoos/m3-modular-admin/-/blob/master/CHANGELOG.md  
 **Supported Python Version**: 3.9  
-**Support**:  Denys_Lykholit@epam.com` 
+**Support**:  Oleksandr_Onsha@epam.com` 
