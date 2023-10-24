@@ -1,0 +1,62 @@
+import getpass
+
+USER_NAME = getpass.getuser()
+SUPPORTED_OS = ['nt', 'posix']
+LOG_FORMAT_FOR_FILE = f'%(asctime)s [USER: {USER_NAME}][%(levelname)s]' \
+                      f'%(name)s,%(lineno)s [Trace ID: %(dd.trace_id)s] ' \
+                      f'%(message)s'
+
+ACTIVATED_STATE = 'activated'
+API_MODULE_FILE = 'api_module.json'
+BLOCKED_STATE = 'blocked'
+CLI_PATH_KEY = 'cli_path'
+CLI_VIEW = 'cli'
+COMMAND = 'command'
+COMMANDS_BASE_FILE_NAME = 'web_service/commands_base.json'
+CUSTOM_LOG_PATH = 'LOG_PATH'
+DATABASE_DIR = 'databases'
+DATE = 'date'
+DEPENDENCIES = 'dependencies'
+EVENT_TYPE = 'event_type'
+EVENT_TYPE_API = 'api'
+FIRST_REC_TIMESTAMP = 1_672_531_201_000
+GROUP = 'group'
+HTTP_BAD_REQUEST = 400
+HTTP_OK = 200
+ID = 'id'
+JOB_ID = 'job_id'
+KEY = 'key'
+LINUX = 'posix'
+API_LOG_FILE_NAME = 'modular_api.log'
+CLI_LOG_FILE_NAME = 'modular_cli.log'
+LOG_FOLDER = '.modular_api'
+MAX_COLUMNS_WIDTH = 30
+META = 'meta'
+MIN_VER = 'min_version'
+MODULAR_API_CODE = 'Code'
+MODULAR_API_ITEMS = 'items'
+MODULAR_API_JSON_CODE = 'code'
+MODULAR_API_JSON_MESSAGE = 'message'
+MODULAR_API_JSON_WARNINGS = 'warnings'
+MODULAR_API_MESSAGE = 'Message'
+MODULAR_API_RESPONSE = 'Response'
+MODULAR_API_TABLE_TITLE = 'table_title'
+MODULAR_API_USERNAME = 'modular_admin_username'
+MODULAR_API_WARNINGS = 'Warnings'
+MODULAR_LOCAL_DB_PATH = 'MODULAR_LOCAL_DB_PATH'
+MODULES_DIR = 'modules'
+MODULES_PATH = 'modules'
+MODULE_NAME_KEY = 'module_name'
+MOUNT_POINT_KEY = 'mount_point'
+M_POINT = 'mount_point'
+PRODUCT = 'product'
+PRODUCT_MODULAR = 'modular'
+REMOVED_STATE = 'removed'
+STATS_DB_NAME = 'ModularStats.json'
+STATUS = 'status'
+SWAGGER_ENABLED_KEY = 'swagger_enabled'
+TABLE_VIEW = 'table'
+TIMESTAMP = 'timestamp'
+TOOL_VERSION_MAPPING = """\n{tool}        {version}"""
+USERNAME_ATTR = 'username'
+WINDOWS = 'nt'
