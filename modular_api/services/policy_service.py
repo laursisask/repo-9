@@ -82,7 +82,7 @@ class PolicyService:
     @staticmethod
     def create_policy_entity(policy_name, policy_content, state=None,
                              creation_date=None):
-        _LOG.info(f'Going to create policy entity for {policy_name}')
+        _LOG.info(f'Creating policy \'{policy_name}\'')
         state = state if state else ACTIVATED_STATE
         creation_date = creation_date if creation_date else utc_time_now()
         return Policy(
@@ -97,8 +97,7 @@ class PolicyService:
 
     @staticmethod
     def calculate_policy_hash(policy_item: Policy):
-        _LOG.info(f'Going to calculate policy hash for '
-                  f'{policy_item.policy_name} policy')
+        _LOG.info(f'Calculating \'{policy_item.policy_name}\' policy hash ')
         prepared_user_to_be_hashed = json.dumps(
             policy_item.response_object_without_hash()
         )
@@ -107,26 +106,26 @@ class PolicyService:
 
     @staticmethod
     def get_policies_by_name(policy_names):
-        _LOG.info(f'Going to batch get policies by provided names: '
+        _LOG.info(f'Batch get policies by provided names: '
                   f'{policy_names}')
         return list(Policy.batch_get(items=policy_names))
 
     @staticmethod
     def save_policy(policy_item: Policy):
-        _LOG.info(f'Going to save {policy_item.policy_name} policy entity')
+        _LOG.info(f'Saving policy \'{policy_item.policy_name}\'')
         return Policy.save(policy_item)
 
     @staticmethod
     def scan_policies():
-        _LOG.info('Going to scan policies')
+        _LOG.info('Scanning policies')
         return list(Policy.scan())
 
     @staticmethod
     def describe_policy(policy_name):
-        _LOG.info(f'Going to describe policy by {policy_name} name')
+        _LOG.info(f'Describing policy \'{policy_name}\'')
         return Policy.get_nullable(hash_key=policy_name)
 
     @staticmethod
     def delete_policy(policy_item: Policy):
-        _LOG.info(f'Going to delete policy by {policy_item.policy_name} name')
+        _LOG.info(f'Deleting policy \'{policy_item.policy_name}\'')
         policy_item.delete()

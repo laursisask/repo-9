@@ -13,7 +13,7 @@ class UserService:
     @staticmethod
     def create_user_entity(username, group, password, state=None,
                            creation_date=None):
-        _LOG.info(f'Going to create user entity for {username}')
+        _LOG.info(f'User \'{username}\' entity creation')
         state = state if state else ACTIVATED_STATE
         creation_date = creation_date if creation_date else datetime.utcnow().\
             replace(microsecond=0)
@@ -27,13 +27,14 @@ class UserService:
         )
 
     def save_user_with_recalculated_hash(self, user_item: User):
+        _LOG.info(f'Saving recalculated hash for the user \'{user_item.username}\'')
         hash_sum = self.calculate_user_hash(user_item=user_item)
         user_item.hash = hash_sum
         return User.save(user_item)
 
     @staticmethod
     def save_user(user_item: User):
-        _LOG.info(f'Going to save user entity for {user_item.username}')
+        _LOG.info(f'Saving user \'{user_item.username}\'')
         return User.save(user_item)
 
     @staticmethod
@@ -43,7 +44,7 @@ class UserService:
 
     @staticmethod
     def calculate_user_hash(user_item: User):
-        _LOG.info('Going calculate hash for User item')
+        _LOG.info(f'Calculating hash for \'{user_item.username}\'')
         prepared_user_to_be_hashed = json.dumps(
             user_item.response_object_without_hash()
         )
@@ -52,10 +53,10 @@ class UserService:
 
     @staticmethod
     def describe_user(username):
-        _LOG.info(f'Going to describe user by {username} name')
+        _LOG.info(f'Describing user \'{username}\'')
         return User.get_nullable(hash_key=username)
 
     @staticmethod
     def delete_user(user_item: User):
-        _LOG.info(f'Going to delete user by {user_item.username} name')
+        _LOG.info(f'Deleting user \'{user_item.username}\'')
         user_item.delete()

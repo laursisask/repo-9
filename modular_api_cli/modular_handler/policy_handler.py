@@ -2,6 +2,7 @@ import os
 
 import click
 
+from modular_api.helpers.log_helper import get_cli_logger
 from modular_api.models.group_model import Group
 from modular_api.helpers.constants import REMOVED_STATE, ACTIVATED_STATE
 from modular_api.services.group_service import GroupService
@@ -13,6 +14,7 @@ from modular_api.helpers.exceptions import ModularApiBadRequestException, \
 from modular_api.helpers.file_helper import open_json_file
 
 line_sep = os.linesep
+_LOG = get_cli_logger('policy_handler')
 
 
 class PolicyHandler:
@@ -27,16 +29,19 @@ class PolicyHandler:
         :param policy_path: Path to file which contains allowed/denied actions
         :return: CommandResponse
         """
+        _LOG.info(f'Going to add policy named \'{policy}\' from \'{policy_path}\'')
         existing_policy = self.policy_service.describe_policy(
             policy_name=policy
         )
         if existing_policy:
             if existing_policy.state == REMOVED_STATE:
+                _LOG.error('Policy already exists')
                 raise ModularApiBadRequestException(
                     f'Policy with name \'{policy}\' already exists and marked as '
                     f'\'{REMOVED_STATE}\'.')
 
             elif existing_policy.state == ACTIVATED_STATE:
+                _LOG.error('Policy already exists')
                 raise ModularApiBadRequestException(
                     f'Policy with name \'{policy}\' already exists. Please '
                     f'change name to another one or update existing '
@@ -44,6 +49,7 @@ class PolicyHandler:
                     f'{line_sep}modular policy update --policy {policy} '
                     f'--policy_path {policy_path}\'')
 
+            _LOG.error('Policy already exists')
             raise ModularApiConflictException(
                 f'Policy with name \'{policy}\' already exists with invalid '
                 f'\'{existing_policy.state}\' state')
@@ -60,6 +66,7 @@ class PolicyHandler:
         policy_item.hash = policy_hash_sum
         self.policy_service.save_policy(policy_item=policy_item)
 
+        _LOG.info('Policy successfully added')
         return CommandResponse(
             message=f'Policy with name \'{policy}\' successfully added')
 
@@ -70,8 +77,10 @@ class PolicyHandler:
         :param policy_path: Path to file which contains allowed/denied actions
         :return: CommandResponse
         """
+        _LOG.info(f'Going to update policy \'{policy}\' from \'{policy_path}\'')
         policy_item = self.policy_service.describe_policy(policy_name=policy)
         if not policy_item:
+            _LOG.error('Policy does not exist')
             raise ModularApiBadRequestException(
                 f'Policy with name \'{policy}\' does not exist. Please check '
                 f'policy name spelling or add new policy with name \'{policy}\''
@@ -79,6 +88,7 @@ class PolicyHandler:
                 f'--policy {policy} --policy_path {policy_path}')
 
         if policy_item.state != ACTIVATED_STATE:
+            _LOG.error('Policy blocked or deleted')
             raise ModularApiBadRequestException(
                 f'Policy with name \'{policy}\' is blocked or deleted. Can not '
                 f'update policy content. To get more detailed info please '
@@ -101,6 +111,7 @@ class PolicyHandler:
         policy_item.hash = policy_hash_sum
         self.policy_service.save_policy(policy_item=policy_item)
 
+        _LOG.info('Policy successfully updated')
         return CommandResponse(
             message=f'Policy with name \'{policy}\' successfully updated')
 
@@ -119,6 +130,7 @@ class PolicyHandler:
         :return: CommandResponse
         """
 
+        _LOG.info(f'Going to describe policy \'{policy}\'')
         invalid = 0
         if policy:
             policy_items = self.policy_service.describe_policy(
@@ -163,13 +175,16 @@ class PolicyHandler:
         :param policy: Policy name to delete
         :return: CommandResponse
         """
+        _LOG.info(f'Going to delete policy \'{policy}\'')
         policy_item = self.policy_service.describe_policy(policy_name=policy)
         if not policy_item:
+            _LOG.error('Policy does not exist')
             raise ModularApiBadRequestException(
                 f'Policy with name \'{policy}\' does not exist. Nothing to '
                 f'delete')
 
         if policy_item.state != ACTIVATED_STATE:
+            _LOG.error('Policy blocked or deleted')
             raise ModularApiBadRequestException(
                 f'Policy with name \'{policy}\' already blocked or deleted. '
                 f'To get more detailed information please execute command:'
@@ -182,7 +197,6 @@ class PolicyHandler:
                 f'leads to policy entity hash sum recalculation. Are you sure?',
                 abort=True)
 
-
         self._check_policy_in_groups(policy_name=policy)
         policy_item.state = REMOVED_STATE
         policy_item.last_modification_date = utc_time_now()
@@ -191,6 +205,7 @@ class PolicyHandler:
         policy_item.hash = policy_hash_sum
         self.policy_service.save_policy(policy_item=policy_item)
 
+        _LOG.info('Policy successfully deleted')
         return CommandResponse(
             message=f'Policy with name \'{policy}\' successfully deleted')
 

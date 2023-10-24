@@ -96,6 +96,23 @@ def change_password(username, password):
     )
 
 
+@user.command(cls=BaseCommand, name='change_username')
+@click.option('--old_username', '-ou', type=str,
+              help='Current Username', required=True)
+@click.option('--new_username', '-nu', type=str,
+              help='Username to set', required=True)
+@ResponseDecorator(click.echo, 'Can not change user name')
+@produce_audit(secured_params=['password'])
+def change_username(old_username, new_username):
+    """
+    Changes user's name
+    """
+    return user_handler_instance().change_user_name_handler(
+        old_username=old_username,
+        new_username=new_username
+    )
+
+
 @user.command(cls=BaseCommand, name='add_to_group')
 @click.option('--username', '-u', type=str, help='Username', required=True)
 @click.option('--group', '-g', type=str, multiple=True,

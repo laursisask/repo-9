@@ -1,23 +1,9 @@
-# Copyright 2018 EPAM Systems, Inc.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-# [http://www.apache.org/licenses/LICENSE-2.0]
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
 import os
 import traceback
-
+from typing import Tuple
 from modular_api.helpers.constants import (
-    SUPPORTED_OS, LOG_FORMAT_FOR_FILE, LOG_FOLDER, LOG_FILE_NAME, USER_NAME,
-    CUSTOM_LOG_PATH)
+    SUPPORTED_OS, LOG_FORMAT_FOR_FILE, LOG_FOLDER, API_LOG_FILE_NAME, USER_NAME,
+    CLI_LOG_FILE_NAME)
 from ddtrace import patch_all
 from pathlib import Path
 from logging import (DEBUG, getLogger, Formatter, StreamHandler, INFO,
@@ -28,13 +14,16 @@ patch_all(logging=True)
 modular_logger = getLogger('modular_api')
 modular_logger.propagate = False
 
+cli_logger = getLogger('modular_api_cli')
+cli_logger.propagate = False
+
 
 def get_log_path():
-    log_path = os.getenv(CUSTOM_LOG_PATH)
+    log_path = os.getenv('SERVICE_LOGS')
     return log_path
 
 
-def create_path_for_logs():
+def create_path_for_logs() -> Tuple[str, str]:
     """
     Initializing the path for the log file.
 
@@ -54,12 +43,12 @@ def create_path_for_logs():
             f" ${path_home} is not set. The log file will be stored by path "
             f"{os.getcwd()}"
         )
-        return LOG_FILE_NAME
+        return API_LOG_FILE_NAME, CLI_LOG_FILE_NAME
 
     # Creating full name of the path to the log directory
     custom_log_path = get_log_path()
     if custom_log_path:
-        path = os.path.join(custom_log_path, LOG_FOLDER, USER_NAME)
+        path = os.path.join(custom_log_path)
     elif os_name == 'posix':
         path = os.path.join('/var/log', LOG_FOLDER, USER_NAME)
     else:
@@ -72,17 +61,10 @@ def create_path_for_logs():
                 f"No access: {path}. To find the log file, check the directory"
                 f" from which you called the command"
             )
-            return LOG_FILE_NAME
-    full_path = os.path.join(path, LOG_FILE_NAME)
-    return full_path
-
-
-def get_file_handler(level=INFO):
-    file_handler = FileHandler(filename=create_path_for_logs())
-    file_handler.setLevel(level)
-    file_handler.setFormatter(
-        Formatter(LOG_FORMAT_FOR_FILE, '%Y-%m-%d %H:%M:%S'))
-    return file_handler
+            return API_LOG_FILE_NAME, CLI_LOG_FILE_NAME
+    api_log_full_path = os.path.join(path, API_LOG_FILE_NAME)
+    cli_log_full_path = os.path.join(path, CLI_LOG_FILE_NAME)
+    return api_log_full_path, cli_log_full_path
 
 
 def get_stream_handler(level=WARNING):
@@ -104,25 +86,19 @@ def get_custom_terminal_logger(name, log_level_for_terminal=INFO,
     return custom_terminal_logger
 
 
-def get_custom_terminal_file_logger(name, log_level_for_terminal=INFO,
-                                    log_level_for_file=DEBUG,
-                                    log_level_logger=None):
-    custom_logger = getLogger(name)
-    custom_logger.propagate = False
-    if not log_level_logger:
-        log_level_logger = log_level_for_terminal
-    custom_logger.setLevel(log_level_logger)
-    custom_logger.addHandler(get_file_handler(log_level_for_file))
-    custom_logger.addHandler(get_stream_handler(log_level_for_terminal))
-    return custom_logger
-
-
 # file output
-file_handler = FileHandler(filename=create_path_for_logs())
+api_log_file_path, cli_log_file_path = create_path_for_logs()
+
+file_handler = FileHandler(filename=api_log_file_path)
 log_formatter = Formatter(LOG_FORMAT_FOR_FILE, '%Y-%m-%d %H:%M:%S')
 file_handler.setLevel(DEBUG)
 file_handler.setFormatter(log_formatter)
 modular_logger.addHandler(file_handler)
+
+cli_file_handler = FileHandler(filename=cli_log_file_path)
+cli_file_handler.setLevel(DEBUG)
+cli_file_handler.setFormatter(log_formatter)
+cli_logger.addHandler(cli_file_handler)
 
 
 def get_logger(log_name, level=DEBUG):
@@ -130,6 +106,13 @@ def get_logger(log_name, level=DEBUG):
     if level:
         module_logger.setLevel(level)
     return module_logger
+
+
+def get_cli_logger(log_name, level=DEBUG):
+    api_cli_logger = cli_logger.getChild(log_name)
+    if level:
+        api_cli_logger.setLevel(level)
+    return api_cli_logger
 
 
 def exception_handler_formatter(logger, exception, trace_id=None):

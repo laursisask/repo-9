@@ -283,12 +283,19 @@ During installation/uninstallation process all mentioned dependencies will be ch
 ## 8. First run
 
 Check list before start:
-1) `startup_config.json` file properly configured
-2) if "mode" in `startup_config.json` is "saas" you should add some environment variables:
-   * AWS_ACCESS_KEY_ID
-   * AWS_SECRET_ACCESS_KEY
-   * AWS_SESSION_TOKEN
-   * AWS_REGION
+1) `startup_config.json` file properly configured  
+2) `startup_config.json` modes:
+   * if "mode" property is "saas" then AWS DynamoDB will be used as DB. You 
+   should set the following environment variables:
+      * AWS_ACCESS_KEY_ID
+      * AWS_SECRET_ACCESS_KEY
+      * AWS_SESSION_TOKEN
+      * AWS_REGION  
+   * if "mode" property is "onprem" then local file-based DB will be in usage. By 
+   default, all IO operations with DB use the next storage path: 
+   `~user-home-dir\.modular_api\databases`. You can change this path by setting 
+   environment variable, key - `MODULAR_LOCAL_DB_PATH` and value is the path to the 
+   custom directory 
 3) at least one policy created and attached to the group
 4) user created and group with policy attached to the user
 5) at least one component installed in Modular-API
@@ -356,4 +363,4 @@ without saving
 **Documentation**: https://git.epam.com/epmc-eoos/m3-modular-admin/-/blob/master/README.md  
 **Changelog**: https://git.epam.com/epmc-eoos/m3-modular-admin/-/blob/master/CHANGELOG.md  
 **Supported Python Version**: 3.9  
-**Support**:  Oleksandr_Onsha@epam.com` 
+**Support**:  Oleksandr_Onsha@epam.com

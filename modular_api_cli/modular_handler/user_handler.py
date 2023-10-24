@@ -2,6 +2,7 @@ import os
 
 import click
 
+from modular_api.helpers.log_helper import get_cli_logger
 from modular_api.helpers.request_processor import generate_route_meta_mapping
 from modular_api.helpers.utilities import validate_meta_keys
 from modular_api.web_service.iam import filter_commands_by_permissions
@@ -22,6 +23,7 @@ from modular_api.helpers.exceptions import ModularApiConfigurationException, \
 SET_META_CMD = 'modular user set_meta_attribute --key $parameter_name ' \
                '--value $parameter_value'
 line_sep = os.linesep
+_LOG = get_cli_logger('user_handler')
 
 
 class UserHandler:
@@ -38,10 +40,11 @@ class UserHandler:
         :param password: User password
         :return: CommandResponse
         """
-
+        _LOG.info(f'Going to add user \'{username}\' to groups {groups}')
         existing_user = self.user_service.describe_user(username=username)
         if existing_user:
             if existing_user.state == BLOCKED_STATE:
+                _LOG.error('User already exists but blocked')
                 raise ModularApiBadRequestException(
                     f'User \'{username}\' is blocked. To unblock user please '
                     f'execute command:{line_sep}'
@@ -49,14 +52,16 @@ class UserHandler:
                     f'<$THE USER UNBLOCKING REASON>')
 
             elif existing_user.state == REMOVED_STATE:
+                _LOG.error('User already exists but marked as removed')
                 raise ModularApiBadRequestException(
                     f'User \'{username}\' already exists and marked as '
                     f'\'{REMOVED_STATE}\'')
 
             elif existing_user.state == ACTIVATED_STATE:
+                _LOG.error('User already exists')
                 raise ModularApiBadRequestException(
                     f'User \'{username}\' already activated.{line_sep}')
-
+            _LOG.error('User already exists')
             raise ModularApiConflictException(
                 f'User \'{username}\' already exists with invalid '
                 f'\'{existing_user.state}\' state')
@@ -66,6 +71,7 @@ class UserHandler:
         )
 
         if not existing_groups:
+            _LOG.error('Can not find all or one from provided groups')
             raise ModularApiBadRequestException(
                 f'One or all provided \'{", ".join(groups)}\' group(s) does not '
                 f'exist.{line_sep}To add group please execute '
@@ -77,6 +83,7 @@ class UserHandler:
                 skipped_groups.append(group)
 
         if skipped_groups:
+            _LOG.error('Missing group detected')
             raise ModularApiBadRequestException(
                 f'Group(s) you are trying to add to the user is '
                 f'missing:{line_sep}{", ".join(skipped_groups)}{line_sep}'
@@ -118,6 +125,7 @@ class UserHandler:
             f'via \'modular user change_password\' command'
         )
 
+        _LOG.info('User successfully activated')
         return CommandResponse(
             message=f'User \'{username}\' has been successfully activated.'
                     f'{line_sep}User added to the following group(s):'
@@ -129,13 +137,15 @@ class UserHandler:
         :param username: Username that will be deleted from white list
         :return: CommandResponse
         """
-
+        _LOG.info(f'Going to delete user \'{username}\'')
         existing_user = self.user_service.describe_user(username=username)
         if not existing_user:
+            _LOG.error('User does not exist')
             raise ModularApiConfigurationException(
                 f'User \'{username}\' does not exist. Nothing to delete')
 
         if existing_user.state != ACTIVATED_STATE:
+            _LOG.error('User already marked as deleted or blocked')
             raise ModularApiBadRequestException(
                 f'User \'{username}\' is blocked or deleted.{line_sep}To get '
                 f'more detailed information please execute command:{line_sep}'
@@ -154,6 +164,7 @@ class UserHandler:
         existing_user.hash = user_hash_sum
         self.user_service.save_user(user_item=existing_user)
 
+        _LOG.info('User successfully deleted')
         return CommandResponse(
             message=f'User {username} has been successfully deleted')
 
@@ -164,9 +175,10 @@ class UserHandler:
         :param reason: The textual reason of user removal
         :return: CommandResponse
         """
-
+        _LOG.info(f'Going to block user \'{username}\' due to {reason}')
         existed_user = self.user_service.describe_user(username=username)
         if not existed_user:
+            _LOG.error('User does not exist')
             raise ModularApiConfigurationException(
                 f'User \'{username}\' does not exist. Can not block')
 
@@ -184,7 +196,7 @@ class UserHandler:
         user_hash_sum = self.user_service.calculate_user_hash(existed_user)
         existed_user.hash = user_hash_sum
         self.user_service.save_user(user_item=existed_user)
-
+        _LOG.info('User successfully blocked')
         return CommandResponse(
             message=f'User \'{username}\' has been successfully blocked')
 
@@ -195,9 +207,10 @@ class UserHandler:
         :param reason: The textual reason of user returning to whitelist
         :return: CommandResponse
         """
-
+        _LOG.info(f'Going to unblock user \'{username}\' due to {reason}')
         existed_user = self.user_service.describe_user(username=username)
         if not existed_user:
+            _LOG.error('User does not exist')
             raise ModularApiConfigurationException(
                 f'User \'{username}\' does not exist. Can not unblock')
 
@@ -216,6 +229,7 @@ class UserHandler:
         existed_user.hash = user_hash_sum
         self.user_service.save_user(user_item=existed_user)
 
+        _LOG.info('User successfully unblocked')
         return CommandResponse(
             message=f'User \'{username}\' has been successfully unblocked')
 
@@ -227,13 +241,15 @@ class UserHandler:
         :param password: New user password
         :return: CommandResponse
         """
-
+        _LOG.info(f'Going to change password for user \'{username}\'')
         existing_user = self.user_service.describe_user(username=username)
         if not existing_user:
+            _LOG.error('User does not exists')
             raise ModularApiConfigurationException(
                 f'User \'{username}\' does not exists. Can not change password')
 
         if existing_user.state != ACTIVATED_STATE:
+            _LOG.error('User blocked or deleted')
             raise ModularApiBadRequestException(
                 f'User \'{username}\' is blocked or deleted.{line_sep}To get '
                 f'more detailed information please execute command:{line_sep}'
@@ -255,9 +271,50 @@ class UserHandler:
         existing_user.hash = user_hash_sum
 
         self.user_service.save_user(user_item=existing_user)
-
+        _LOG.info('Password successfully updated')
         return CommandResponse(
             message=f'User \'{username}\' password has been updated')
+
+    def change_user_name_handler(self, old_username, new_username) \
+            -> CommandResponse:
+        _LOG.info(f'Going to change username for user \'{old_username}\'')
+        existing_user = self.user_service.describe_user(username=old_username)
+        if not existing_user:
+            _LOG.error('User does not exists')
+            raise ModularApiConfigurationException(
+                f'User \'{old_username}\' does not exists. '
+                f'Can not change username')
+
+        if existing_user.state != ACTIVATED_STATE:
+            _LOG.error('User blocked or deleted')
+            raise ModularApiBadRequestException(
+                f'User \'{old_username}\' is blocked or deleted.'
+                f'{line_sep}To get more detailed information '
+                f'please execute command:{line_sep}'
+                f'modular user describe --username {old_username}')
+
+        if self.user_service.calculate_user_hash(existing_user) != \
+                existing_user.hash:
+            click.confirm(
+                f'User \'{old_username}\' is compromised. '
+                f'Command execution leads to user entity hash '
+                f'sum recalculation. Are you sure?',
+                abort=True)
+
+        existing_user.last_modification_date = utc_time_now()
+        existing_user.username = new_username
+        self.user_service.save_user_with_recalculated_hash(
+            user_item=existing_user
+        )
+        _LOG.debug(f'New user with username: {new_username} created.')
+
+        _LOG.debug(f'Deleting old user {old_username}')
+        existing_user.username = old_username
+        self.user_service.delete_user(user_item=existing_user)
+        _LOG.info('Username successfully updated')
+        return CommandResponse(
+            message=f'User \'{old_username}\' name has been '
+                    f'updated to {new_username}')
 
     def manage_user_groups_handler(self, username, groups, action) -> \
             CommandResponse:
@@ -268,14 +325,16 @@ class UserHandler:
         :param action: attach or detach group
         :return: CommandResponse
         """
-
+        _LOG.info(f'Going to {action} user \'{username}\' in group(s)')
         groups = list(set(groups))
         existing_user = self.user_service.describe_user(username=username)
         if not existing_user:
+            _LOG.error('User does not exists')
             raise ModularApiConfigurationException(
                 f'User \'{username}\' does not exist. Please check spelling')
 
         if existing_user.state != ACTIVATED_STATE:
+            _LOG.error('User blocked or deleted')
             raise ModularApiBadRequestException(
                 f'User {username} is blocked or deleted{line_sep}To get more '
                 f'detailed information please execute command:{line_sep}'
@@ -342,7 +401,10 @@ class UserHandler:
         user_hash_sum = self.user_service.calculate_user_hash(existing_user)
         existing_user.hash = user_hash_sum
         self.user_service.save_user(user_item=existing_user)
-
+        _LOG.info('User entity updated')
+        if warnings_list:
+            _LOG.warning(f'Command executed with following warning(s): '
+                         f'{warnings_list}')
         return CommandResponse(
             message=f'User \'{username}\' has been updated',
             warnings=warnings_list)
@@ -518,6 +580,7 @@ class UserHandler:
         :return: CommandResponse
         """
 
+        _LOG.info(f'Going to describe user \'{username}\'')
         if username:
             return self.describe_single_user(username=username)
 
@@ -546,6 +609,7 @@ class UserHandler:
             items=pretty_users)
 
     def set_user_meta_handler(self, username, key, values):
+        _LOG.info(f'Going to set meta for the user \'{username}\'')
         user = self.check_existence_and_get_user(username)
         self.check_user_validness(user)
         validate_meta_keys(key)
@@ -555,15 +619,19 @@ class UserHandler:
         user.meta[key] = list(set(values))
         user.last_modification_date = utc_time_now()
         self.user_service.save_user_with_recalculated_hash(user)
+        _LOG.info(f'Meta with key \'{key}\' and values \'{values}\' '
+                  f'successfully {action}')
         return CommandResponse(
             message=f'Meta information for user \'{username}\' has been '
                     f'successfully {action}'
         )
 
     def update_user_meta_handler(self, username, key, values):
+        _LOG.info(f'Going to update user \'{username}\' meta')
         user = self.check_existence_and_get_user(username)
         self.check_user_validness(user)
         if not user.meta:
+            _LOG.error('There is no meta to update')
             raise ModularApiBadRequestException(
                 f'User \'{username}\' has no meta, nothing to update.'
                 f'{os.linesep}Please set meta first with the command '
@@ -575,6 +643,7 @@ class UserHandler:
             values_list.extend(list(values))
             user.meta[key] = list(set(values_list))
         else:
+            _LOG.error(f'Invalid key \'{key}\' for meta updating')
             raise ModularApiBadRequestException(
                 f'User \'{username}\' has no parameter name \'{key}\' in meta, '
                 f'nothing to update.{os.linesep}Set parameter name first with '
@@ -582,15 +651,18 @@ class UserHandler:
             )
         user.last_modification_date = utc_time_now()
         self.user_service.save_user_with_recalculated_hash(user)
+        _LOG.error('User meta successfully updated')
         return CommandResponse(
             message=f'Meta information for user \'{username}\' has been '
                     f'successfully updated'
         )
 
     def delete_user_meta_handler(self, username, keys):
+        _LOG.info(f'Going to delete meta from the user \'{username}\'')
         user = self.check_existence_and_get_user(username)
         self.check_user_validness(user)
         if not user.meta:
+            _LOG.error('There is no meta to delete')
             raise ModularApiBadRequestException(
                 f'User \'{username}\' has no meta, nothing to delete.'
                 f'{os.linesep}Please set meta first with the command '
@@ -615,12 +687,15 @@ class UserHandler:
         if skipped_keys:
             message += f'{os.linesep}Next parameter(s) name deletion skipped ' \
                        f'due to its absence in user meta: {skipped_keys}'
+        _LOG.info(f'Keys {keys} successfully deleted from user meta')
         return CommandResponse(message=message)
 
     def reset_user_meta_handler(self, username):
+        _LOG.info(f'Going to delete meta from the user \'{username}\'')
         user = self.check_existence_and_get_user(username)
         self.check_user_validness(user)
         if not user.meta or not user.meta.attribute_values.keys():
+            _LOG.error('User has no meta, nothing to delete')
             raise ModularApiBadRequestException(
                 f'User \'{username}\' has no meta, nothing to reset.'
                 f'{os.linesep}Please set meta first with the command '
@@ -629,14 +704,17 @@ class UserHandler:
         user.meta = {}
         user.last_modification_date = utc_time_now()
         self.user_service.save_user_with_recalculated_hash(user)
+        _LOG.info('All user meta successfully deleted')
         return CommandResponse(
             message=f'All data in user \'{username}\' meta has been deleted'
         )
 
     def describe_user_meta_handler(self, username):
+        _LOG.info(f'Going to describe \'{username}\' user meta')
         user = self.check_existence_and_get_user(username)
         items = []
         if not user.meta or not user.meta.attribute_values.keys():
+            _LOG.info('User meta is empty, nothing to describe')
             return CommandResponse(
                 message=f'Nothing to describe. User \'{username}\' has no meta'
             )
@@ -650,6 +728,7 @@ class UserHandler:
                     "Parameter values": result
                 }
             )
+        _LOG.info('User meta successfully described')
         return CommandResponse(
             table_title=f"Meta information for user \'{username}\'",
             items=items

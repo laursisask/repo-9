@@ -31,10 +31,10 @@ class PermissionsService:
     def get_available_commands():
         commands_base_path = os.path.join(WEB_SERVICE_PATH,
                                           COMMANDS_BASE_FILE_NAME)
-        _LOG.info(f'Going to get available commands from {commands_base_path}')
+        _LOG.info(f'Getting available commands from {commands_base_path}')
         if not os.path.isfile(commands_base_path):
             unable__to_run_server_message = 'Can not run server without any ' \
-                                            'installed module'
+                                            'installed modules'
             _LOG.error(unable__to_run_server_message)
             raise ModularApiConfigurationException(unable__to_run_server_message)
 
@@ -43,7 +43,7 @@ class PermissionsService:
         return available_commands
 
     def resolve_available_commands(self, group_names, empty_cache):
-        _LOG.info(f'Going to resolve available commands for {group_names} '
+        _LOG.info(f'Available commands resolving for \'{group_names}\' '
                   f'groups')
         policy_aggregation = []
         for group in group_names:
@@ -61,7 +61,7 @@ class PermissionsService:
         return user_allowed_commands
 
     def generate_allowed_commands(self, group_name):
-        _LOG.info(f'Going to resolve available commands for {group_name} '
+        _LOG.info(f'Available commands generating for {group_name} '
                   f'groups')
 
         group_item = self.group_service.describe_group(group_name=group_name)

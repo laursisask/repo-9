@@ -1,7 +1,95 @@
 CHANGELOG
 
+# [3.3.1] - 2023-10-05
+* Resolve payload, handle empty exec_status in save_stats method
+
+# [3.3.0] - 2023-10-04
+* Add `modular user change_username` command
+
+# [3.2.1] - 2023-10-04
+* Minimal allowed cli version raised to 2.0
+
+# [3.2.0] - 2023-10-03
+* Save modular user username to modular_sdk thread-local storage
+
+## [3.1.0] - 2023-09-29
+* Implemented async jobs registration
+
+## [3.0.1] - 2023-09-26
+* Add library `typing_extensions==4.7.1` in setup.py
+* Fix typo: library `pydantic` used twice in setup.py
+
+# [3.0.0] - 2023-09-25
+* Update libraries to support Python 3.10:
+  * `Beaker` from 1.11.0 to 1.12.1
+  * `botocore` from 1.27.38 to 1.29.80
+  * `bottle` from 0.12.19 to 0.12.25
+  * `ddtrace` from 0.58.5 to 0.61.5
+  * `MarkupSafe` from 2.1.1 to 2.1.3
+  * `prettytable` from 3.2.0 to 3.9.0
+  * `Pillow` from 8.3.1 to 10.0.0
+  * `pydantic` from 1.9.1 to 1.10.2
+  * `PyJWT` from 2.4.0 to 2.8.0
+  * `pyparsing` from 3.0.9 to 3.1.1
+  * `PyYAML` from 6.0 to 6.0.1
+  * `tenacity` from 8.0.1 to 8.2.3
+  * `typing_extensions` from 4.3.0 to 4.7.1
+  * `urllib3` from 1.26.11 to 1.26.16
+  * `setuptools` from 60.6.0 to 68.2.1
+  * `wcwidth` from 0.2.5 to 0.2.6
+
+## [2.2.32] - 2023-09-14
+* Fix bug related to consistency in usage statistic report
+
+## [2.2.31] - 2023-09-01
+* Update setup requirements
+
+## [2.2.30] - 2023-08-31
+* Refactoring response during module install/uninstall - exit status code "1" instead 
+of exception raising [CICD-team request]
+
+## [2.2.29] - 2023-08-31
+* Fix minor issues with logs
+* Handle unexpected click exceptions from modules proxy their responses to 
+  modular-cli [EPMCEOOS-5021]
+
+## [2.2.28] - 2023-08-30
+* Split logs for api-service and api-cli [EPMCEOOS-5024]
+
+## [2.2.27] - 2023-08-28
+* Fix auto relogin bug
+
+## [2.2.26] - 2023-08-28
+* Fix write permissions issue while saving statistic report in command `modular get_stats` 
+
+## [2.2.25] - 2023-08-23
+* Fix bug during modules installation [EPMCEOOS-5042]
+
+## [2.2.24] - 2023-08-21
+* Add version compatibility checking between Modular-API dependencies and module 
+to be installed to API [EPMCEOOS-5042]
+
+## [2.2.23] - 2023-08-11
+* Add ability to collect usage statistic [EPMCEOOS-4974]
+
+## [2.2.22] - 2023-08-02
+* Add ability to set custom log path by environment variable `SERVICE_LOGS` [EPMCEOOS-5022]
+
+## [2.2.21] - 2023-07-31
+* Fix an issue with path to modules directory for `/version` resource
+
+## [2.2.20] - 2023-07-27
+* Add ability to show response in JSON format for command `modular describe`
+
+## [2.2.19] - 2023-07-26
+* Add ability to set up custom path to DB files in On-Premises mode.
+
+## [2.2.18] - 2023-07-24
+* Change entry point for console script from `m3modular` to `modular`, 
+fix "modules" dir path resolving
+
 ## [2.2.17] - 2023-07-20
-* improved checking of modules dependencies while installation/uninstallation 
+* Improved checking of modules dependencies while installation/uninstallation 
 
 ## [2.2.16] - 2023-07-11
 * Integrate `modular-sdk` and `modular-cli-sdk` instead of `mcdm` usage 

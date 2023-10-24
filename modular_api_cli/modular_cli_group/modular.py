@@ -1,6 +1,5 @@
 import click
 from pkg_resources import get_distribution
-
 from modular_api_cli.modular_cli_group.user import user, user_handler_instance
 from modular_api_cli.modular_cli_group.group import group
 from modular_api_cli.modular_cli_group.policy import policy
@@ -11,6 +10,7 @@ from modular_api.services.install_service import install_module, uninstall_modul
 from modular_api.helpers.decorators import BaseCommand, ResponseDecorator
 from modular_api.helpers.exceptions import ModularApiBadRequestException
 from modular_api.helpers.log_helper import get_logger
+from modular_api_cli.modular_handler.usage_handler import UsageHandler
 
 _LOG = get_logger('modular_api')
 
@@ -18,6 +18,11 @@ _LOG = get_logger('modular_api')
 def audit_handler_instance():
     audit_service = SERVICE_PROVIDER.audit_service()
     return AuditHandler(audit_service=audit_service)
+
+
+def stats_handler_instance():
+    usage_service = SERVICE_PROVIDER.usage_service()
+    return UsageHandler(usage_service=usage_service)
 
 
 @click.group()
@@ -53,15 +58,43 @@ def uninstall(module_name):
     return uninstall_module(module_name)
 
 
-@modular.command(cls=BaseCommand)
+@modular.command(cls=BaseCommand, name='describe')
+@click.option('--json', is_flag=True,
+              help='Show response as JSON. Can not be used with --table '
+                   'parameter')
 @click.pass_context
 @ResponseDecorator(click.echo, 'Can not describe module')
-def describe(ctx):
+def describe(ctx, json):
     """
-    Describe all available modules versions and Modular-SDK/CLI version
+    Describe all available modules versions and Modular-SDK/CLI version.
     """
-    table_response = ctx.params.get('table', False)
-    return check_and_describe_modules(table_response)
+    table = ctx.params.get('table', False)
+    return check_and_describe_modules(table, json)
+
+
+@modular.command(cls=BaseCommand, name='get_stats')
+@click.option('--from_date', '-fd', type=str,
+              help='Filter by date from which records are displayed. '
+                   'Format yyyy-mm-dd. If not specified - first day of current '
+                   'month will be used')
+@click.option('--to_date', '-td', type=str,
+              help='Filter by date until which records are displayed. '
+                   'Format yyyy-mm-dd. If not specified - current date will be '
+                   'used')
+@click.option('--display_table', '-D', is_flag=True,
+              help='Flag to show report in terminal. If not specified - report '
+                   'will be stored into the file')
+@click.option('--path', '-p', type=str,
+              help='Directory path to saving report file. If not specified - '
+                   'report will be saved in user home directory')
+@ResponseDecorator(click.echo, 'Can not get statistic')
+def get_stats(from_date, to_date, display_table, path):
+    """
+    Saves usage statistic to a file
+    """
+    return stats_handler_instance().get_stats_handler(
+        from_date=from_date, to_date=to_date, display_table=display_table,
+        path=path)
 
 
 @modular.command(cls=BaseCommand, name='audit')

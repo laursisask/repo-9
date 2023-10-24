@@ -4,16 +4,18 @@ import os
 import sys
 from functools import lru_cache
 from pathlib import Path
+from time import sleep
 from unittest.mock import MagicMock
 
 import beaker.middleware
+import click.exceptions
 import pkg_resources
 from bottle import (default_app, run, route, request, BaseRequest,
                     get, view, post, redirect, hook)
 from ddtrace import tracer
-from pynamodb.exceptions import GetError
 from swagger_ui import api_doc
 
+from modular_api import RequestQueue, StatisticService
 from services.permissions_cache_service import permissions_handler_instance
 from helpers.request_processor import generate_route_meta_mapping
 from helpers.response_processor import process_response
@@ -29,7 +31,8 @@ from helpers.log_helper import get_logger, exception_handler_formatter
 from helpers.params_converter import convert_api_params
 from helpers.response_utils import get_trace_id, build_response
 from helpers.utilities import prepare_request_path, token_from_auth_header
-from helpers.constants import HTTP_OK, MODULES_PATH, MODULE_NAME_KEY
+from helpers.constants import (
+    HTTP_OK, MODULES_PATH, MODULE_NAME_KEY, HTTP_BAD_REQUEST)
 from helpers.constants import MODULAR_API_USERNAME, SWAGGER_ENABLED_KEY, \
     COMMANDS_BASE_FILE_NAME, API_MODULE_FILE, MOUNT_POINT_KEY
 from swagger.generate_open_api_spec import associate_definition_with_group
@@ -40,6 +43,7 @@ from web_service.response_processor import (build_exception_content,
                                             extract_and_convert_parameters,
                                             get_group_path)
 from web_service.settings import SESSION_SETTINGS, SWAGGER_SETTINGS
+from modular_sdk.modular import Modular
 
 _LOG = get_logger('index')
 
@@ -52,11 +56,15 @@ WEB_SERVICE_PATH = os.path.dirname(__file__)
 SWAGGER_ALLOWED_PATH = []
 
 PERMISSION_SERVICE = permissions_handler_instance()
+USAGE_SERVICE = StatisticService()
+REQUEST_QUEUE = RequestQueue()
+THREAD_LOCAL_STORAGE = Modular().thread_local_storage_service()
 
 
 def resolve_permissions(tracer, empty_cache=None):
     def decorator(func):
         def wrapper(*a, **ka):
+            sleep(0.35)
             user, password = request.auth or (None, None)
             token = None
             if not password:  # not basic auth -> probably bearer
@@ -73,9 +81,7 @@ def resolve_permissions(tracer, empty_cache=None):
                 ka['allowed_commands'] = allowed_commands
                 ka['user_meta'] = user_meta
                 return func(*a, **ka)
-            except (ModularApiUnauthorizedException,
-                    ModularApiConfigurationException,
-                    GetError) as e:
+            except Exception as e:
                 _trace_id = get_trace_id(tracer=tracer)
                 exception_handler_formatter(
                     logger=_LOG,
@@ -94,7 +100,7 @@ def resolve_permissions(tracer, empty_cache=None):
 
 
 def get_module_group_and_associate_object():
-    modules_path = MODULES_PATH
+    modules_path = Path(__file__).parent.resolve() / MODULES_PATH
     global MODULE_GROUP_GROUP_OBJECT_MAPPING
     for module in os.listdir(modules_path):
         module_api_config = os.path.join(modules_path, module,
@@ -288,7 +294,7 @@ def add_versions_to_allowed_modules(allowed_commands: dict):
 
 
 def resolve_user_available_components_version(allowed_commands: dict):
-    modules_path = Path(__file__).parent.parent / 'modules'
+    modules_path = Path(__file__).parent / 'modules'
     components_versions = {}
     for module in modules_path.iterdir():
         api_file_path = module / API_MODULE_FILE
@@ -344,8 +350,30 @@ def version():
     )
 
 
-def __automated_relogin() -> bool:
-    header = request.headers.get('Authorization')
+@route('/stats', method=['POST'])
+@route(f'{CONFIG.prefix}/stats', method=['POST'])
+@tracer.wrap()
+@resolve_permissions(tracer=tracer, empty_cache=True)
+def stats(allowed_commands, user_meta):
+    _trace_id = get_trace_id(tracer=tracer)
+    entry_request = request
+    required_params = ['EventType', 'Product', 'JobId', 'Status', 'Meta']
+
+    absent_params = [param for param in required_params
+                     if not entry_request.json.get(param)]
+    if absent_params:
+        return build_response(_trace_id=_trace_id, http_code=HTTP_BAD_REQUEST,
+                              content=None)
+
+    payload = {param: entry_request.json.get(param)
+               for param in required_params}
+
+    USAGE_SERVICE.save_stats(request=entry_request, payload=payload)
+    return build_response(_trace_id=_trace_id, http_code=HTTP_OK, content=None)
+
+
+def __automated_relogin(request_item) -> bool:
+    header = request_item.headers.get('Authorization')
     raw_token = header.split(maxsplit=2)[-1]
     token = decode_jwt_token(raw_token)
     client_meta_version = token.get('meta_version')
@@ -373,10 +401,12 @@ def __automated_relogin() -> bool:
 def index(mount_point=None, group=None, command=None, parent_group=None,
           subgroup=None, allowed_commands=None, user_meta=None):
     _trace_id = get_trace_id(tracer=tracer)
+    REQUEST_QUEUE.put(request)
     temp_files_list = []
     try:
-        relogin_needed = __automated_relogin()
-        auth_type = request.headers.get('authorization')
+        request_item = REQUEST_QUEUE.get()
+        relogin_needed = __automated_relogin(request_item)
+        auth_type = request_item.headers.get('authorization')
         if auth_type and auth_type.startswith('Basic'):
             relogin_needed = False
         if relogin_needed:
@@ -392,9 +422,9 @@ def index(mount_point=None, group=None, command=None, parent_group=None,
         if error_response:
             return error_response
 
-        path = prepare_request_path(path=request.path,
+        path = prepare_request_path(path=request_item.path,
                                     prefix=CONFIG.prefix)
-        method = request.method
+        method = request_item.method
 
         route_meta_mapping = generate_route_meta_mapping(
             commands_meta=allowed_commands)
@@ -402,9 +432,9 @@ def index(mount_point=None, group=None, command=None, parent_group=None,
         command_def = route_meta_mapping.get(path)
         if not command_def:
             raise ModularApiBadRequestException('Can not found requested '
-                                               'command')
+                                                'command')
         request_body_raw = extract_and_convert_parameters(
-            request=request,
+            request=request_item,
             command_def=command_def)
 
         request_body_raw = validate_request(command=command_def,
@@ -420,7 +450,8 @@ def index(mount_point=None, group=None, command=None, parent_group=None,
                 secure_parameters=secure_parameters
             )
         _LOG.info('Request data: \npath={}\n'
-                  'method={}\nbody:\n{}'.format(path, method, body_to_log))
+                  'method={}\nbody:\n{}'.format(path, method,
+                                                body_to_log))
 
         command_handler_name = command_def.get('handler')
         group_name = command_def.get('parent')
@@ -434,20 +465,32 @@ def index(mount_point=None, group=None, command=None, parent_group=None,
         # todo get username from user_meta of somewhere else, but
         #  not from header again.
         username = username_from_jwt_token(
-            token_from_auth_header(request.headers.get('Authorization'))
+            token_from_auth_header(request_item.headers.get('Authorization'))
         )
+        # saving username to thread-local storage
+        THREAD_LOCAL_STORAGE.set('modular_user', username)
+
         # hopefully, token will be here... otherwise 500, I mean, it must be
         # here because the endpoint is authorized by token
-        response = correct_method.main(
-            args=parameters,
-            standalone_mode=False,
-            obj={MODULAR_API_USERNAME: username}
-        )
+        try:
+            response = correct_method.main(
+                args=parameters,
+                standalone_mode=False,
+                obj={MODULAR_API_USERNAME: username}
+            )
+        except click.exceptions.UsageError as error:
+            # just in case something is not handled
+            return build_response(
+                _trace_id=_trace_id,
+                http_code=200,  # means that click worked,
+                message=str(error)
+            )
         # obj goes to click.Context. Other module CLI should use it to
         # understand what user is making the request
         response = json.loads(response)
         _LOG.info(f'Obtained response {response} for {_trace_id} request')
         content, code = process_response(response=response)
+        USAGE_SERVICE.save_stats(request=request_item, payload=response)
         if content.get('warnings'):
             if version_warning:
                 content['warnings'].extend(version_warning)
@@ -467,6 +510,7 @@ def index(mount_point=None, group=None, command=None, parent_group=None,
         error_response = build_response(_trace_id=_trace_id,
                                         http_code=code,
                                         content=content)
+        USAGE_SERVICE.save_stats(request=request_item, payload=content)
         return error_response
     finally:
         if temp_files_list:

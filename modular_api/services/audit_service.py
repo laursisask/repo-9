@@ -16,7 +16,7 @@ class AuditService:
 
     @staticmethod
     def prepare_audit_to_be_hashed(audit: Audit) -> dict:
-        _LOG.info(f'Going to prepare audit to be hashed')
+        _LOG.info(f'Preparing audit event to be hashed')
         """
         Returns audit event as dictionary from Audit table without hash
         attribute. All values in dictionary are string type
@@ -28,7 +28,7 @@ class AuditService:
 
     def save_audit(self, timestamp, group, command, parameters,
                    result, warnings=None) -> None:
-        _LOG.info(f'Going to save audit')
+        _LOG.info(f'Saving audit item')
         """
         Saves event and its hash sum to the 'ModularAudit' table
         """
@@ -45,7 +45,7 @@ class AuditService:
         """
         Compares an existing audit event with its hash sum
         """
-        _LOG.info(f'Going to check audit hash')
+        _LOG.info(f'Checking audit event hash')
         audit_hash = audit.hash_sum
         if not audit_hash:
             return False
@@ -58,6 +58,7 @@ class AuditService:
         """
         Returns iterator with filtered results
         """
+        _LOG.info('Describing audit table')
         filter_condition = None
         range_key_condition = None
 

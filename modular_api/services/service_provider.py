@@ -1,5 +1,6 @@
 from modular_api.services.group_service import GroupService
 from modular_api.services.policy_service import PolicyService
+from modular_api.services.usage_service import UsageService
 from modular_api.services.user_service import UserService
 from modular_api.services.audit_service import AuditService
 
@@ -11,6 +12,7 @@ class ServiceProvider:
         __group_service = None
         __policy_service = None
         __audit_service = None
+        __usage_service = None
 
         def __str__(self):
             return id(self)
@@ -34,6 +36,11 @@ class ServiceProvider:
             if not self.__audit_service:
                 self.__audit_service = AuditService()
             return self.__audit_service
+
+        def usage_service(self):
+            if not self.__usage_service:
+                self.__usage_service = UsageService()
+            return self.__usage_service
 
     instance = None
 

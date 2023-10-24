@@ -5,10 +5,10 @@ from pathlib import Path
 from pynamodb.expressions.condition import Comparison, Between
 from tinydb import TinyDB, Query
 
+from modular_api.helpers.constants import LOG_FOLDER, DATABASE_DIR, \
+    MODULAR_LOCAL_DB_PATH
 from modular_api.helpers.exceptions import ModularApiInternalException
 
-M3MODULAR_DIR = '.modular_api'
-DATABASE_DIR = 'databases'
 D_M_Y_TEMPLATE = "%d.%m.%Y %H:%M:%S"
 MILLIS_TEMPLATE = '%Y-%m-%dT%H:%M:%S.000000+0000'
 BETWEEN = 'BETWEEN'
@@ -19,15 +19,19 @@ LESS_OR_EQ = '<='
 
 class PynamoDBToTinyDBAdapter:
     def __init__(self):
-        self.db_file_path = os.path.join(str(Path.home()), M3MODULAR_DIR,
-                                         DATABASE_DIR)
-        if not os.path.exists(self.db_file_path):
-            os.makedirs(self.db_file_path)
+
+        db_path = os.environ.get(MODULAR_LOCAL_DB_PATH)
+        if not db_path:
+            db_path = os.path.join(str(Path.home()), LOG_FOLDER, DATABASE_DIR)
+        if not os.path.exists(db_path):
+            os.makedirs(db_path)
+
+        self.db_dir_path = db_path
         self.query_params = Query()
 
     def resolve_tiny_db_instance(self, model_class):
         collection_name = f'{model_class.Meta.table_name}.json'
-        return TinyDB(os.path.join(self.db_file_path, collection_name))
+        return TinyDB(os.path.join(self.db_dir_path, collection_name))
 
     @staticmethod
     def __get_table_keys(model_class):

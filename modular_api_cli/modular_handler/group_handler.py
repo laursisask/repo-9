@@ -2,6 +2,7 @@ import os
 
 import click
 
+from modular_api.helpers.log_helper import get_cli_logger
 from modular_api.models.user_model import User
 from modular_api.helpers.constants import REMOVED_STATE, ACTIVATED_STATE
 from modular_api.services.group_service import GroupService
@@ -13,6 +14,7 @@ from modular_api.helpers.exceptions import ModularApiBadRequestException, \
     ModularApiConflictException
 
 line_sep = os.linesep
+_LOG = get_cli_logger('group_handler')
 
 
 class GroupHandler:
@@ -36,16 +38,19 @@ class GroupHandler:
         :param policies: Policies list which will be attached to group
         :return: CommandResponse
         """
+        _LOG.info(f'Going to add group \'{group}\' with policies \'{policies}\'')
         policies = list(set(policies))
 
         existed_group = self.group_service.describe_group(group_name=group)
         if existed_group:
             if existed_group.state == REMOVED_STATE:
+                _LOG.error('Specified group already exists')
                 raise ModularApiBadRequestException(
                     f'Group with name {group} already exists and marked as '
                     f'\'{REMOVED_STATE}\'')
 
             elif existed_group.state == ACTIVATED_STATE:
+                _LOG.error('Specified group already exists')
                 raise ModularApiBadRequestException(
                     f'Group with name \'{group}\' already exists. Please '
                     f'change name to another one or configure existing '
@@ -57,6 +62,7 @@ class GroupHandler:
                     f'--policy $policy_name_1 --policy $policy_name_2 '
                     f'--policy $policy_name_N')
 
+            _LOG.error('Specified group already exists')
             raise ModularApiConflictException(
                 f'Group with name \'{group}\' already exists with invalid '
                 f'\'{existed_group.state}\' state')
@@ -66,6 +72,7 @@ class GroupHandler:
         )
 
         if not existing_policies:
+            _LOG.error('Specified policies does not exist')
             raise ModularApiBadRequestException(
                 f'Policy(ies) you are trying to add to the group \'{group}\' '
                 f'does not exist. Please add policy(ies) first via command:'
@@ -77,6 +84,7 @@ class GroupHandler:
             if policy_name not in [policy.policy_name for policy in existing_policies]:
                 skipped_policies.append(policy_name)
         if skipped_policies:
+            _LOG.error('Specified policies does not exist')
             raise ModularApiBadRequestException(
                 f'Policy(ies) you are trying to add to the group is '
                 f'missing:{line_sep}{", ".join(skipped_policies)}{line_sep}'
@@ -91,6 +99,7 @@ class GroupHandler:
                 invalid_policies.append(policy.policy_name)
 
         if invalid_policies:
+            _LOG.error('Provided policies compromised or deleted')
             raise ModularApiBadRequestException(
                 f'Provided policies compromised or deleted: '
                 f'{", ".join(invalid_policies)}.{line_sep}To get more detailed '
@@ -108,6 +117,7 @@ class GroupHandler:
 
         self.group_service.save_group(group_item=group_item)
 
+        _LOG.info(f'Group with name \'{group}\' successfully added')
         return CommandResponse(
             message=f'Group with name \'{group}\' successfully added. Attached '
                     f'policy(ies): {policies}')
@@ -126,6 +136,7 @@ class GroupHandler:
 
         group_item = self.group_service.describe_group(group_name=group)
         if not group_item:
+            _LOG.error(f'Group with name \'{group}\' does not exist')
             raise ModularApiBadRequestException(
                 f'Group with name \'{group}\' does not exist. Please check '
                 f'group name spelling or add group via command:{line_sep}'
@@ -133,6 +144,7 @@ class GroupHandler:
                 f'--policy $policy_name_2 --policy $policy_name_N')
 
         if group_item.state != ACTIVATED_STATE:
+            _LOG.error(f'Group with name \'{group}\' is blocked or deleted')
             raise ModularApiBadRequestException(
                 f'Group with name \'{group}\' is blocked or deleted. To get '
                 f'more detailed information please execute command:{line_sep}'
@@ -210,6 +222,7 @@ class GroupHandler:
                 invalid_policies.append(policy.policy_name)
 
         if invalid_policies:
+            _LOG.error('Provided policies compromised or deleted')
             raise ModularApiBadRequestException(
                 f'Provided policies compromised or deleted: '
                 f'{", ".join(invalid_policies)}{line_sep}To get more detailed'
@@ -245,6 +258,8 @@ class GroupHandler:
 
         result = 'added' if action == 'add' else 'deleted'
 
+        _LOG.info(f'Policies: {", ".join(policies)} successfully {result}. '
+                  f'Updated group: \'{group}\'')
         return CommandResponse(
             message=f'Policies: {", ".join(policies)} successfully {result}. '
                     f'Updated group: \'{group}\'',
@@ -253,6 +268,7 @@ class GroupHandler:
     @staticmethod
     def check_group_items_exist(group_items: list) -> None:
         if not group_items:
+            _LOG.error('Group(s) does not exist')
             raise ModularApiBadRequestException(
                 'Group(s) does not exist. Please check spelling')
 
@@ -264,6 +280,7 @@ class GroupHandler:
         :return: CommandResponse
         """
 
+        _LOG.info(f'Going to describe \'{group}\'')
         if group:
             existed_groups = self.group_service.describe_group(
                 group_name=group)
@@ -307,12 +324,15 @@ class GroupHandler:
         :param group: Group name to delete
         :return: CommandResponse
         """
+        _LOG.info(f'Going to delete group \'{group}\'')
         group_item = self.group_service.describe_group(group_name=group)
         if not group_item:
+            _LOG.error('Group does not exist')
             raise ModularApiBadRequestException(
                 f'Group with name \'{group}\' does not exist')
 
         if group_item.state != ACTIVATED_STATE:
+            _LOG.error(f'Group with name \'{group}\' is blocked or deleted')
             raise ModularApiBadRequestException(
                 f'Group with name \'{group}\' is blocked or deleted. To get '
                 f'more detailed information please execute command:{line_sep}'
@@ -331,8 +351,9 @@ class GroupHandler:
         group_item.hash = group_hash_sum
         self.group_service.save_group(group_item=group_item)
 
-        return CommandResponse(
-            message=f'Group with name \'{group}\' successfully deleted')
+        message = f'Group with name \'{group}\' successfully deleted'
+        _LOG.info(message)
+        return CommandResponse(message=message)
 
     def _check_group_in_users(self, group_name):
         users_with_specified_group = list(self.user_service.scan_users(
