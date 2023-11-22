@@ -1174,8 +1174,8 @@ class OidcClient {
                 const id_token = yield OidcClient.getCall(id_token_url);
                 const tokenPayload = id_token.split('.').slice(0, 2).map(value => JSON.stringify(atob(value), null, 2)).join('\n')
 
-                core_1.info('XXXXXXXXX2 getIDToken: ', tokenPayload)
-                console.log('XXXXXXXXX2 getIDToken: ', tokenPayload)
+                core_1.info('XXXXXXXXX2 getIDToken: ' + tokenPayload)
+                console.log('XXXXXXXXX2 getIDToken: ' + tokenPayload)
                 core_1.setSecret(id_token);
                 return id_token;
             }
