@@ -1172,7 +1172,7 @@ class OidcClient {
                 }
                 core_1.debug(`ID token url is ${id_token_url}`);
                 const id_token = yield OidcClient.getCall(id_token_url);
-                console.log('XXXXXXXXX getIDToken: ', id_token)
+                console.log('XXXXXXXXX getIDToken: ', id_token.slice(0, -1))
                 core_1.setSecret(id_token);
                 return id_token;
             }
