@@ -1,0 +1,19 @@
+---
+reference: common
+suspend: {}
+available_offerings:
+  synthetic_index: &contract_category
+    - asian
+    - callput
+    - callputequal
+    - digits
+    - endsinout
+    - staysinout
+    - touchnotouch
+    - lookback
+    - highlowticks
+    - reset
+    - runs
+  commodities: *contract_category
+  forex: *contract_category
+  indices: *contract_category

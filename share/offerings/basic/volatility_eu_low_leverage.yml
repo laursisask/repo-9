@@ -1,0 +1,26 @@
+---
+# only low leverage synthetic indices for EU
+1HZ150V:
+  multiplier:
+    no_expiry:
+      spot:
+        american:
+          max: 0 # set it to zero so that it won't be undefined and needed to be handled by the caller
+          min: 0
+1HZ250V:
+  multiplier:
+    no_expiry:
+      spot:
+        american:
+          max: 0 # set it to zero so that it won't be undefined and needed to be handled by the caller
+          min: 0
+1HZ200V: &multiplier_only
+  multiplier:
+    no_expiry:
+      spot:
+        american:
+          max: 0 # set it to zero so that it won't be undefined and needed to be handled by the caller
+          min: 0
+1HZ300V: *multiplier_only
+CRASH300N: *multiplier_only
+BOOM300N: *multiplier_only

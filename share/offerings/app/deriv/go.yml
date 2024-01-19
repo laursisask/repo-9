@@ -1,0 +1,18 @@
+---
+reference: common
+suspend:
+  underlying_symbol:
+    1HZ200V: 1
+    1HZ300V: 1
+available_offerings:
+  synthetic_index: &contract_category
+    - multiplier
+    - callputspread
+    - callput
+    - callputequal
+  commodities: &rise_fall
+    - callput
+    - callputequal
+  forex: *contract_category
+  indices: *rise_fall
+  cryptocurrency: *contract_category

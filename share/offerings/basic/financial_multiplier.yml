@@ -1,0 +1,22 @@
+---
+# non-binary offerings on specific forex pairs (mainly major pairs)
+frxAUDJPY: &active_fx_multiplier
+  multiplier:
+    no_expiry:
+      spot:
+        american:
+          max: 0 # set it to zero so that it won't be undefined and neede to be handled by the caller
+          min: 0
+frxEURCHF: *active_fx_multiplier
+frxEURAUD: *active_fx_multiplier
+frxGBPJPY: *active_fx_multiplier
+frxEURJPY: *active_fx_multiplier
+frxUSDCAD: *active_fx_multiplier
+frxEURUSD: *active_fx_multiplier
+frxUSDJPY: *active_fx_multiplier
+frxGBPAUD: *active_fx_multiplier
+frxEURCAD: *active_fx_multiplier
+frxAUDUSD: *active_fx_multiplier
+frxEURGBP: *active_fx_multiplier
+frxUSDCHF: *active_fx_multiplier
+frxGBPUSD: *active_fx_multiplier

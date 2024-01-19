@@ -1,0 +1,12 @@
+---
+WLDAUD: &basket_index
+  multiplier:
+    no_expiry:
+      spot:
+        american:
+          max: 0 # set it to zero so that it won't be undefined and needed to be handled by the caller
+          min: 0
+WLDEUR: *basket_index
+WLDGBP: *basket_index
+WLDUSD: *basket_index
+WLDXAU: *basket_index

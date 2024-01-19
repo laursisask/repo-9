@@ -1,0 +1,1033 @@
+'Deriv (MX) Ltd':
+    short: iom
+    is_eu: 1
+    name: Deriv (MX) Ltd
+    address:
+      - 'First Floor, Millennium House'
+      - Victoria Road
+      - Douglas
+      - IM2 4RW
+      - Isle of Man
+      - British Isles
+    country: Isle of Man
+    legal_allowed_currencies:
+      GBP:
+        name: Pound Sterling
+        type: fiat
+      USD:
+        name: US Dollar
+        type: fiat
+    legal_allowed_offerings:
+      synthetic_index: &iom_contract_category
+        - asian
+        - callput
+        - callputequal
+        - digits
+        - endsinout
+        - staysinout
+        - touchnotouch
+        - lookback
+        - highlowticks
+        - reset
+        - callputspread
+        - runs
+      commodities: *iom_contract_category
+      forex: *iom_contract_category
+      indices: *iom_contract_category
+
+    broker_codes:
+      - MX
+    legal_default_currency: GBP
+    residences_default_currency:
+      gb: GBP
+    has_reality_check: 1
+    tnc_required: 1
+    transaction_checks:
+      - validate_tnc
+      - compliance_checks
+      - check_authentication_required
+      - check_client_can_trade
+      - _validate_currency
+      - _validate_client_self_exclusion
+      - _validate_iom_withdrawal_limit
+      - _validate_jurisdictional_restrictions
+      - synthetic_age_verification_check
+    client_validation_misc:
+      - validate_tnc
+      - compliance_checks
+      - check_trade_status
+      - _validate_client_status
+    allowed_for_brands:
+      - binary
+      - deriv
+    offerings:
+      basic:
+        default: none
+    marketing_email_consent:
+      required: 1
+      default: 0
+    social_responsibility_check: "required"
+    qualifying_payment_check_required: 0
+    requirements:
+      signup:
+        - salutation
+        - citizen
+        - first_name
+        - last_name
+        - date_of_birth
+        - residence
+        - address_line_1
+        - address_city
+        - address_postcode
+    ip_check_required: always
+    support_professional_client: 0
+    is_authentication_mandatory: 1
+    poi_expiration_check_required: 1
+    poa_outdated_check_required: 1
+    first_deposit_auth_check_required: 0
+    deposit_limit_enabled: 1
+    unlimited_balance: 0
+    allowed_landing_companies_for_authentication_sync:
+        - maltainvest
+    allowed_landing_companies_for_age_verification_sync:
+        - maltainvest
+    allowed_poi_providers:
+        - onfido
+        - manual
+    payout_freezing_funds: 0
+    self_exclusion_notify: 0
+    is_suspended: 1
+
+'Deriv (Europe) Limited':
+    short: malta
+    name: Deriv (Europe) Limited
+    is_eu: 1
+    address:
+      - W Business Centre
+      - Level 3
+      - Triq Dun Karm
+      - Birkirkara
+      - BKR 9033
+      - Malta
+    country: Malta
+    legal_allowed_currencies:
+      USD:
+        name: US Dollar
+        type: fiat
+      EUR:
+        name: Euro
+        type: fiat
+      GBP:
+        name: Pound Sterling
+        type: fiat
+    legal_allowed_offerings:
+      synthetic_index:
+        - asian
+        - callput
+        - callputequal
+        - digits
+        - endsinout
+        - staysinout
+        - touchnotouch
+        - lookback
+        - highlowticks
+        - reset
+        - callputspread
+        - runs
+    broker_codes:
+      - MLT
+    legal_default_currency: EUR
+    has_reality_check: 1
+    tnc_required: 1
+    transaction_checks:
+      - validate_tnc
+      - compliance_checks
+      - check_authentication_required
+      - check_client_can_trade
+      - _validate_currency
+      - _validate_client_self_exclusion
+      - _validate_jurisdictional_restrictions
+    client_validation_misc:
+      - validate_tnc
+      - compliance_checks
+      - check_trade_status
+      - _validate_client_status
+    allowed_for_brands:
+      - binary
+      - deriv
+    offerings:
+      basic:
+        default: none
+    marketing_email_consent:
+      required: 1
+      default: 0
+    actions:
+      first_deposit:
+        - age_verified
+    social_responsibility_check: "required"
+    changeable_fields:
+      only_before_auth:
+        - salutation
+        - first_name
+        - last_name
+        - date_of_birth
+        - citizen
+        - account_opening_reason
+        - tax_residence
+        - tax_identification_number
+      personal_details_not_locked:
+        - first_name
+        - last_name
+        - date_of_birth
+        - citizen
+        - place_of_birth
+    requirements:
+      signup:
+        - salutation
+        - citizen
+        - first_name
+        - last_name
+        - date_of_birth
+        - residence
+        - address_line_1
+        - address_city
+    ip_check_required: always
+    check_max_turnover_limit_is_set: 1
+    support_professional_client: 0
+    is_authentication_mandatory: 1
+    poi_expiration_check_required: 1
+    poa_outdated_check_required: 1
+    first_deposit_auth_check_required: 0
+    deposit_limit_enabled: 1
+    unlimited_balance: 0
+    allowed_landing_companies_for_authentication_sync:
+        - maltainvest
+    allowed_landing_companies_for_age_verification_sync:
+        - maltainvest
+    allowed_poi_providers:
+        - onfido
+        - manual
+    payout_freezing_funds: 1
+    self_exclusion_notify: 0
+    available_mt5_currency_group:
+        - EUR
+    is_suspended: 1
+    
+'Deriv Investments (Europe) Limited':
+    short: maltainvest
+    name: Deriv Investments (Europe) Limited
+    is_eu: 1
+    address:
+      - W Business Centre
+      - Level 3
+      - Triq Dun Karm
+      - Birkirkara
+      - BKR 9033
+      - Malta
+    country: Malta
+    legal_allowed_currencies:
+      USD:
+        name: US Dollar
+        type: fiat
+      EUR:
+        name: Euro
+        type: fiat
+      GBP:
+        name: Pound Sterling
+        type: fiat
+    legal_allowed_offerings:
+      cryptocurrency:
+        - multiplier
+      forex:
+        - multiplier
+      synthetic_index:
+        - multiplier
+    broker_codes:
+      - MF
+      - MFW
+    legal_default_currency: EUR
+    residences_default_currency:
+      gb: GBP
+    tnc_required: 1
+    transaction_checks:
+      - validate_tnc
+      - compliance_checks
+      - check_tax_information
+      - check_authentication_required
+      - check_client_professional
+      - check_client_can_trade
+      - _validate_currency
+      - _validate_client_self_exclusion
+      - _validate_jurisdictional_restrictions
+    client_validation_misc:
+      - validate_tnc
+      - compliance_checks
+      - check_tax_information
+      - check_trade_status
+      - _validate_client_status
+    allowed_for_brands:
+      - binary
+      - deriv
+    offerings:
+      basic:
+        default:
+          - financial_multiplier
+          - volatility_eu_low_leverage
+          - crypto_multiplier
+        override:
+          gb:
+          - financial_multiplier
+    marketing_email_consent:
+      required: 1
+      default: 1
+    actions:
+      first_deposit:
+        - fully_auth_check
+    requirements:
+      signup:
+        - salutation
+        - citizen
+        - tax_residence
+        - tax_identification_number
+        - first_name
+        - last_name
+        - date_of_birth
+        - residence
+        - address_line_1
+        - address_city
+        - account_opening_reason
+      compliance:
+        mt5:
+          - fully_authenticated
+          - expiration_check
+    changeable_fields:
+      personal_details_not_locked:
+        - first_name
+        - last_name
+        - date_of_birth
+        - citizen
+        - place_of_birth
+      only_before_auth:
+        - salutation
+        - first_name
+        - last_name
+        - date_of_birth
+        - citizen
+        - account_opening_reason
+        - tax_residence
+        - tax_identification_number
+    ip_check_required: always
+    support_professional_client: 1
+    is_authentication_mandatory: 1
+    poi_expiration_check_required: 1
+    poa_outdated_check_required: 0
+    first_deposit_auth_check_required: 1
+    requires_face_similarity_check: 1
+    deposit_limit_enabled: 1
+    risk_settings:
+      - aml_thresholds
+      - aml_jurisdiction
+    unlimited_balance: 0
+    allowed_landing_companies_for_authentication_sync:
+        - malta
+        - iom
+        - svg
+    allowed_landing_companies_for_age_verification_sync:
+        - malta
+        - iom
+        - svg
+    allowed_poi_providers:
+        - onfido
+        - manual
+    mt5_require_deriv_account_at:
+        - maltainvest
+    payout_freezing_funds: 0
+    self_exclusion_notify: 0
+    available_mt5_currency_group:
+        - EUR
+        - GBP
+        - USD
+
+'Deriv (SVG) LLC':
+    short: svg
+    is_eu: 0
+    name: Deriv (SVG) LLC
+    country: Saint Vincent and the Grenadines
+    legal_allowed_currencies:
+      USD:
+        name: US Dollar
+        type: fiat
+      EUR:
+        name: Euro
+        type: fiat
+      GBP:
+        name: Pound Sterling
+        type: fiat
+      AUD:
+        name: Australian Dollar
+        type: fiat
+      BTC:
+        name: Bitcoin
+        type: crypto
+      LTC:
+        name: Litecoin
+        type: crypto
+      ETH:
+        name: Ethereum
+        type: crypto
+      USDC:
+        name: USD Coin
+        type: crypto
+        stable: USD
+      UST:
+        name: Tether Omni
+        type: crypto
+        stable: USD
+      eUSDT:
+        name: Tether ERC20
+        type: crypto
+        stable: USD
+      tUSDT:
+        name: Tether TRC20
+        type: crypto
+        stable: USD
+    legal_allowed_offerings:
+      commodities: &svg_contract_category
+        - asian
+        - callput
+        - callputequal
+        - digits
+        - endsinout
+        - staysinout
+        - touchnotouch
+        - lookback
+        - highlowticks
+        - runs
+        - reset
+        - callputspread
+        - multiplier
+        - vanilla
+        - accumulator
+        - turbos
+      forex: *svg_contract_category
+      indices: *svg_contract_category
+      synthetic_index: *svg_contract_category
+      cryptocurrency:
+        - multiplier
+    broker_codes:
+      - CR
+      - CRW
+    legal_default_currency: USD
+    residences_default_currency:
+      au: AUD
+    allows_payment_agents: 1
+    allowed_for_brands:
+      - binary
+      - deriv
+    offerings:
+      basic:
+        default: common
+        override:
+          cn: china
+          tw: china
+          jp: volatility_non_eu
+          no: volatility_non_eu
+          au:
+            - financial_multiplier
+            - smartfx_multiplier
+          sg: financial
+    marketing_email_consent:
+      required: 0
+      default: 1
+    transaction_checks:
+      - compliance_checks
+      - check_client_can_trade
+      - _validate_currency
+      - _validate_client_self_exclusion
+      - _validate_jurisdictional_restrictions
+    client_validation_misc:
+      - compliance_checks
+      - _validate_client_status
+    actions:
+        account_verified:
+          email_client: 1
+    social_responsibility_check: "manual"
+    requirements:
+      signup:
+        - first_name
+        - last_name
+        - residence
+        - date_of_birth
+      withdrawal:
+        - address_city
+        - address_line_1
+    changeable_fields:
+      only_before_auth:
+        - salutation
+        - first_name
+        - last_name
+        - date_of_birth
+        - citizen
+        - account_opening_reason
+        - tax_residence
+        - tax_identification_number
+      personal_details_not_locked:
+        - first_name
+        - last_name
+        - date_of_birth
+        - citizen
+        - place_of_birth
+    support_professional_client: 0
+    is_authentication_mandatory: 1
+    first_deposit_auth_check_required: 0
+    idv_auth_methods:
+        - idv_photo
+        - idv_address
+        - idv
+    poi_expiration_check_required: 0
+    poa_outdated_check_required: 1
+    deposit_limit_enabled: 0
+    unlimited_balance: 1
+    p2p_available: 1
+    lifetime_withdrawal_limit_check: 1
+    allowed_landing_companies_for_age_verification_sync:
+        - maltainvest
+    allowed_poi_providers:
+        - idv
+        - onfido
+        - manual
+    mt5_require_deriv_account_at:
+        - svg
+    payout_freezing_funds: 0
+    self_exclusion_notify: 0
+    risk_settings:
+      - aml_thresholds
+    available_mt5_currency_group:
+        - USD
+    available_trading_platform_currency_group:
+      dxtrade:
+        - USD
+      ctrader:
+        - USD
+
+'Deriv Limited':
+    short: virtual
+    is_virtual: 1
+    is_eu: 0
+    name: Deriv Limited
+    country: Bahamas
+    legal_default_currency: USD
+    legal_allowed_offerings:
+      commodities: &virtual_contract_category
+        - asian
+        - callput
+        - callputequal
+        - digits
+        - endsinout
+        - staysinout
+        - touchnotouch
+        - reset
+        - lookback
+        - highlowticks
+        - runs
+        - callputspread
+        - multiplier
+        - vanilla
+        - accumulator
+        - turbos
+      forex: *virtual_contract_category
+      indices: *virtual_contract_category
+      synthetic_index: *virtual_contract_category
+      cryptocurrency:
+        - multiplier
+    broker_codes:
+      - VRTC
+      - VRW
+    legal_allowed_currencies:
+      USD:
+        name: US Dollar
+        type: fiat
+    allowed_for_brands:
+      - binary
+      - deriv
+    offerings:
+      basic:
+        default:
+          - common
+          - volatility_eu_low_leverage_row
+          - crashboom_multiplier
+        override:
+          cn: china
+          tw: china
+          no: volatility_non_eu
+          jp: volatility_non_eu
+          au:
+            - financial_multiplier
+            - smartfx_multiplier
+          sg: financial
+          gb: financial_multiplier
+          be: none
+          im: none
+          ie: &mixed_eu
+            - financial_multiplier
+            - volatility_eu_low_leverage
+            - crypto_multiplier
+          de: *mixed_eu
+          fr: *mixed_eu
+          es: *mixed_eu
+          it: *mixed_eu
+          gr: *mixed_eu
+          lu: *mixed_eu
+          pt: *mixed_eu
+          se: *mixed_eu
+          pl: *mixed_eu
+          cy: *mixed_eu
+          nl: *mixed_eu
+          si: *mixed_eu
+          lv: *mixed_eu
+          hu: *mixed_eu
+          cz: *mixed_eu
+          ro: *mixed_eu
+          dk: *mixed_eu
+          fi: *mixed_eu
+          lt: *mixed_eu
+          hr: *mixed_eu
+          ee: *mixed_eu
+          sk: *mixed_eu
+          bg: *mixed_eu
+          at: *mixed_eu
+          ec: &mixed_svg_maltainvest
+            - common
+            - volatility_eu_low_leverage_row
+            - crypto_multiplier
+            - crashboom_multiplier
+          za: *mixed_svg_maltainvest
+          aq:
+            - common
+            - volatility_eu_low_leverage_row
+            - crypto_multiplier
+            - crashboom_multiplier
+            - internal_launch
+    marketing_email_consent:
+      required: 0
+      default: 1
+    transaction_checks:
+      - check_client_can_trade
+      - synthetic_age_verification_check
+    support_professional_client: 0
+    is_authentication_mandatory: 0
+    poi_expiration_check_required: 0
+    poa_outdated_check_required: 0
+    first_deposit_auth_check_required: 0
+    deposit_limit_enabled: 0
+    unlimited_balance: 0
+    virtual_account_default_balance: 10000
+    payout_freezing_funds: 0
+    self_exclusion_notify: 0
+    available_mt5_currency_group:
+        - USD
+        - EUR
+        - GBP
+    available_trading_platform_currency_group:
+      dxtrade:
+        - USD
+      ctrader:
+        - USD
+
+'Deriv (V) Ltd':
+    short: vanuatu
+    is_eu: 0
+    address:
+      - Govant Building
+      - Port Vila
+      - P.O. Box 1276
+      - Vanuatu
+      - Republic of Vanuatu
+    name: Deriv (V) Ltd
+    country: Republic of Vanuatu
+    legal_allowed_currencies:
+      USD:
+        name: US Dollar
+        type: fiat
+    legal_allowed_offerings:
+      forex:
+        - callput
+    broker_codes: []
+    legal_default_currency: USD
+    allowed_for_brands:
+      - binary
+      - deriv
+    offerings:
+      basic:
+        default: none
+    marketing_email_consent:
+      required: 0
+      default: 1
+    support_professional_client: 0
+    is_authentication_mandatory: 0
+    poi_expiration_check_required: 1
+    poa_outdated_check_required: 1
+    first_deposit_auth_check_required: 0
+    deposit_limit_enabled: 0
+    unlimited_balance: 0
+    allowed_poi_providers:
+        - onfido
+        - manual
+        - idv
+    mt5_require_deriv_account_at:
+        - svg
+    idv_auth_methods:
+        - idv
+    payout_freezing_funds: 0
+    self_exclusion_notify: 0
+    risk_settings:
+      - mt5_thresholds
+      - mt5_jurisdiction
+    available_mt5_currency_group:
+        - USD
+    requirements:
+      signup:
+        - citizen
+        - place_of_birth
+        - tax_residence
+        - tax_identification_number
+        - account_opening_reason
+      compliance:
+        mt5:
+          - fully_authenticated
+          - expiration_check
+        tax_information:
+          - tax_residence
+          - tax_identification_number
+      after_first_deposit:
+        financial_assessment:
+          - financial_information
+    changeable_fields:
+      only_before_auth:
+        - tax_residence
+        - tax_identification_number
+
+'Deriv (FX) Ltd':
+    short: labuan
+    is_eu: 0
+    address:
+      - Labuan Times Square
+      - Jalan Merdeka
+      - 87000 Federal Territory of Labuan
+      - Malaysia
+    name: Deriv (FX) Ltd
+    country: Malaysia
+    legal_allowed_currencies:
+      USD:
+        name: US Dollar
+        type: fiat
+    legal_allowed_offerings:
+      forex:
+        - callput
+    broker_codes: []
+    legal_default_currency: USD
+    allowed_for_brands:
+      - binary
+      - deriv
+    offerings:
+      basic:
+        default: none
+    marketing_email_consent:
+      required: 0
+      default: 1
+    actions:
+      signup:
+        - sanctions
+    requirements:
+      signup:
+        - phone
+        - citizen
+        - account_opening_reason
+      compliance:
+        mt5:
+          - fully_authenticated
+          - expiration_check
+        tax_information:
+          - tax_residence
+          - tax_identification_number
+      after_first_deposit:
+        financial_assessment:
+          - financial_information
+          - trading_experience
+    support_professional_client: 0
+    is_authentication_mandatory: 1
+    poi_expiration_check_required: 1
+    poa_outdated_check_required: 1
+    first_deposit_auth_check_required: 0
+    deposit_limit_enabled: 0
+    unlimited_balance: 0
+    allowed_poi_providers:
+        - idv
+        - onfido
+        - manual
+    mt5_require_deriv_account_at:
+        - svg
+    idv_auth_methods:
+        - idv
+    payout_freezing_funds: 0
+    self_exclusion_notify: 0
+    risk_settings:
+      - mt5_thresholds
+      - mt5_jurisdiction
+    available_mt5_currency_group:
+        - USD
+
+'Deriv Capital International Ltd':
+    short: samoa
+    is_eu: 0
+    name: Deriv Capital International Ltd
+    country: Samoa
+    legal_allowed_currencies:
+      USD:
+        name: US Dollar
+        type: fiat
+    broker_codes: []
+    legal_default_currency: USD
+    allows_payment_agents: 0
+    allowed_for_brands:
+      - binary
+      - deriv
+    offerings:
+      basic:
+        default: none
+    marketing_email_consent:
+      required: 0
+      default: 1
+    transaction_checks:
+      - compliance_checks
+      - check_client_can_trade
+      - _validate_currency
+      - _validate_client_self_exclusion
+      - _validate_jurisdictional_restrictions
+    client_validation_misc:
+      - compliance_checks
+      - _validate_client_status
+    actions:
+        account_verified:
+          email_client: 1
+    requirements:
+      signup:
+        - residence
+        - currency
+        - payment_method
+        - first_name
+        - last_name
+        - date_of_birth
+        - address_line_1
+        - address_city
+        - address_postcode
+        - address_state
+    support_professional_client: 0
+    is_authentication_mandatory: 0
+    poi_expiration_check_required: 0
+    poa_outdated_check_required: 1
+    first_deposit_auth_check_required: 0
+    p2p_available: 0
+    lifetime_withdrawal_limit_check: 1
+    skip_authentication: 0
+    payout_freezing_funds: 0
+    self_exclusion_notify: 0
+    mt5_transfer_with_different_currency_allowed: 0
+    available_mt5_currency_group:
+        - USD
+        - EUR
+        - GBP
+
+'Deriv Capital International Ltd (Virtual)':
+    short: samoa-virtual
+    is_virtual: 1
+    is_eu: 0
+    name: Deriv Capital International Ltd (Virtual)
+    country: Samoa
+    legal_default_currency: USD
+    broker_codes: []
+    legal_allowed_currencies:
+      USD:
+        name: US Dollar
+        type: fiat
+    allowed_for_brands:
+      - binary
+      - deriv
+    offerings:
+      basic:
+        default: none
+    marketing_email_consent:
+      required: 0
+      default: 1
+    transaction_checks:
+      - check_client_can_trade
+    support_professional_client: 0
+    is_authentication_mandatory: 0
+    poi_expiration_check_required: 0
+    poa_outdated_check_required: 1
+    first_deposit_auth_check_required: 0
+    deposit_limit_enabled: 0
+    unlimited_balance: 0
+    virtual_account_default_balance: 10000
+    payout_freezing_funds: 0
+    self_exclusion_notify: 0
+    available_mt5_currency_group:
+        - USD
+        - EUR
+        - GBP
+
+'Deriv (BVI) Ltd':
+    short: bvi
+    is_eu: 0
+    address:
+      - Kingston Chambers
+      - PO Box 173
+      - Road Town
+      - Tortola
+      - British Virgin Islands
+    name: Deriv (BVI) Ltd
+    country: British Virgin Islands
+    legal_allowed_currencies:
+      USD:
+        name: US Dollar
+        type: fiat
+    broker_codes: []
+    legal_default_currency: USD
+    allowed_for_brands:
+      - binary
+      - deriv
+    offerings:
+      basic:
+        default: none
+    marketing_email_consent:
+      required: 0
+      default: 1
+    actions:
+      signup:
+        - sanctions
+    requirements:
+      signup:
+        - phone
+        - citizen
+        - account_opening_reason
+      compliance:
+        mt5:
+          - fully_authenticated
+          - expiration_check
+        tax_information:
+          - tax_residence
+          - tax_identification_number
+      after_first_deposit:
+        financial_assessment:
+          - financial_information
+          - trading_experience
+    support_professional_client: 0
+    is_authentication_mandatory: 1
+    first_deposit_auth_check_required: 0
+    idv_auth_methods:
+        - idv_photo
+        - idv_address
+        - idv
+    poi_expiration_check_required: 1
+    poa_outdated_check_required: 1
+    deposit_limit_enabled: 0
+    unlimited_balance: 0
+    allowed_poi_providers:
+        - idv
+        - onfido
+        - manual
+    mt5_require_deriv_account_at:
+        - svg
+    payout_freezing_funds: 0
+    self_exclusion_notify: 0
+    risk_settings:
+      - mt5_thresholds
+      - mt5_jurisdiction
+    available_mt5_currency_group:
+        - USD
+
+'Deriv Services Ltd':
+    short: dsl
+    aliases:
+      - seychelles
+    is_disabled: 0
+    is_for_affiliates: 1
+    is_eu: 0
+    name: Deriv Services Ltd
+    country: Seychelles
+    legal_allowed_currencies:
+      USD:
+        name: US Dollar
+        type: fiat
+      EUR:
+        name: Euro
+        type: fiat
+      GBP:
+        name: Pound Sterling
+        type: fiat
+      AUD:
+        name: Australian Dollar
+        type: fiat
+    broker_codes:
+      - CRA
+    legal_default_currency: USD
+    residences_default_currency:
+      au: AUD
+    allows_payment_agents: 1
+    allowed_for_brands:
+      - binary
+      - deriv
+    offerings:
+      basic:
+        default: none
+    marketing_email_consent:
+      required: 0
+      default: 1
+    transaction_checks:
+      - compliance_checks
+      - check_client_can_trade
+      - _validate_currency
+      - _validate_client_self_exclusion
+      - _validate_jurisdictional_restrictions
+    client_validation_misc:
+      - compliance_checks
+      - _validate_client_status
+    actions:
+        account_verified:
+          email_client: 1
+    requirements:
+      signup:
+        - first_name
+        - last_name
+        - residence
+        - date_of_birth
+        - address_line_1
+    changeable_fields:
+      only_before_auth:
+        - salutation
+        - first_name
+        - last_name
+        - date_of_birth
+        - citizen
+        - account_opening_reason
+        - tax_residence
+        - tax_identification_number
+      personal_details_not_locked:
+        - first_name
+        - last_name
+        - date_of_birth
+        - citizen
+        - place_of_birth
+    support_professional_client: 0
+    is_authentication_mandatory: 0
+    poi_expiration_check_required: 0
+    poa_outdated_check_required: 1
+    first_deposit_auth_check_required: 0
+    deposit_limit_enabled: 0
+    unlimited_balance: 0
+    p2p_available: 0
+    lifetime_withdrawal_limit_check: 1
+    payout_freezing_funds: 0
+    self_exclusion_notify: 0
+    available_mt5_currency_group:
+        - USD
