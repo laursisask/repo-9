@@ -15,8 +15,8 @@ automations:
         args:
           label: "{{ calc.etr }} min review"
           color: {{ colors.red if (calc.etr >= 20) else ( colors.yellow if (calc.etr >= 5) else colors.green ) }}
-  # Inform PR authors when they fail to reference Jira tickets in the PR title or description.
-  label_missing_jira_info:
+  # Inform PR authors when they fail to reference task in the PR description.
+  label_missing_task_info:
     if:
       - {{ not has.task_in_desc }}
     run:
@@ -37,6 +37,22 @@ automations:
       - action: explain-code-experts@v1
         args:
           gt: 10
+          # Automatically approve changes that only affect formatting, documentation, tests, or images
+  # https://docs.gitstream.cm/automations/approve-safe-changes/
+  approve_safe_changes:
+    if:
+      - {{ is.safe_change }}
+    # Apply a safe change label, approve the PR and explain why in a comment.
+    run:
+      - action: add-label@v1
+        args:
+          label: 'Safe Change'
+          color: {{ colors.green }}
+      - action: approve@v1
+      - action: add-comment@v1
+        args:
+          comment: |
+            This PR is considered a safe change and has been automatically approved.
 
 
 # +----------------------------------------------------------------------------+
@@ -50,7 +66,14 @@ calc:
 has:
   task_in_desc: {{ pr.description | includes(regex=r/app.clickup.com/) }}
 
+is:
+  safe_change: {{ (source.diff.files | isFormattingChange) or (files | allDocs) or (files | match(list=['t']) | every ) or (files | allImages) }}
+
+# These are all of the colors in GitHub's default label color palette.
 colors:
   red: 'b60205'
+  orange: 'd93f0b'
   yellow: 'fbca04'
   green: '0e8a16'
+  blue: '1d76db'
+  purple: '5319e7'
