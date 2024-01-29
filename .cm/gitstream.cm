@@ -1,9 +1,6 @@
 # -*- mode: yaml -*-
-# This example configuration for provides basic automations to get started with gitStream.
-# View the gitStream quickstart for more examples: https://docs.gitstream.cm/examples/
 manifest:
   version: 1.0
-
 
 automations:
   # Add a label that indicates how many minutes it will take to review the PR.
@@ -53,18 +50,23 @@ automations:
         args:
           comment: |
             This PR is considered a safe change and has been automatically approved.
-
-
-# +----------------------------------------------------------------------------+
-# | Custom Expressions                                                         |
-# | https://docs.gitstream.cm/how-it-works/#custom-expressions                 |
-# +----------------------------------------------------------------------------+
+  # Apply a label that indicates when a PR deletes files
+  label_deleted_files:
+    if:
+      - {{ has.deleted_files }}
+    run:
+      - action: add-label@v1
+        args:
+          label: 'deleted-files'
+          color: {{ color.gold }}
 
 calc:
   etr: {{ branch | estimatedReviewTime }}
 
 has:
   task_in_desc: {{ pr.description | includes(regex=r/app.clickup.com/) }}
+  # This is used in the `label_deleted_files` automation
+  deleted_files: {{ source.diff.files | map(attr='new_file') | match(term='/dev/null') | some }}
 
 is:
   safe_change: {{ (source.diff.files | isFormattingChange) or (files | allDocs) or (files | match(list=['t']) | every ) or (files | allImages) }}
@@ -77,3 +79,4 @@ colors:
   green: '0e8a16'
   blue: '1d76db'
   purple: '5319e7'
+  gold: '0033CC'
