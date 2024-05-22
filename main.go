@@ -52,8 +52,6 @@ func main() {
 	if port == "" {
 		log.Fatal("PORT environment variable not specified")
 	}
-	browserRedirects := os.Getenv("DISABLE_BROWSER_REDIRECTS") == ""
-
 	registryHost := os.Getenv("REGISTRY_HOST")
 	if registryHost == "" {
 		log.Fatal("REGISTRY_HOST environment variable not specified (example: gcr.io)")
@@ -87,9 +85,9 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	if browserRedirects {
-		mux.Handle("/", browserRedirectHandler(reg))
-	}
+
+    mux.Handle("/", browserRedirectHandler())
+
 	if tokenEndpoint != "" {
 		mux.Handle("/_token", tokenProxyHandler(tokenEndpoint, repoPrefix))
 	}
@@ -161,14 +159,9 @@ func tokenProxyHandler(tokenEndpoint, repoPrefix string) http.HandlerFunc {
 	}).ServeHTTP
 }
 
-// browserRedirectHandler redirects a request like example.com/my-image to
-// REGISTRY_HOST/my-image, which shows a public UI for browsing the registry.
-// This works only on registries that support a web UI when the image name is
-// entered into the browser, like GCR (gcr.io/google-containers/busybox).
-func browserRedirectHandler(cfg registryConfig) http.HandlerFunc {
+func browserRedirectHandler() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		url := fmt.Sprintf("https://%s/%s%s", cfg.host, cfg.repoPrefix, r.RequestURI)
-		http.Redirect(w, r, url, http.StatusTemporaryRedirect)
+        http.Redirect(w, r, "https://mergify.com", http.StatusTemporaryRedirect)
 	}
 }
 
