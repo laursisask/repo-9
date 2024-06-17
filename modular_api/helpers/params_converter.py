@@ -1,12 +1,11 @@
 import os
 import pathlib
 from base64 import b64decode
-import PIL
-import io
-from helpers.exceptions import ModularApiBadRequestException
-from helpers.log_helper import get_logger
 
-_LOG = get_logger('request.validator')
+from modular_api.helpers.exceptions import ModularApiBadRequestException
+from modular_api.helpers.log_helper import get_logger
+
+_LOG = get_logger(__name__)
 TEMP_FILE_TEMPLATE = '.{0}_modular_temp'
 SECURE_STRING = '*****'
 TEMP_FILE_FOLDER_PATH = pathlib.Path(__file__).parent.parent.resolve()
@@ -38,16 +37,10 @@ def is_valid_file_extensions_passed(meta_file_extensions,
             f'{", ".join(meta_file_extensions)}')
 
 
-def process_file_with_extension(file_extension, file_content, temp_file):
-    if file_extension == '.png':
-        original = PIL.Image.open(io.BytesIO(file_content))
-        original.save(temp_file, format="png")
-    elif file_extension == '.pfx':
-        with open(temp_file, 'wb') as file:
-            file.write(file_content)
-    else:
-        with open(temp_file, 'w') as file:
-            file.write(file_content.decode("utf-8"))
+def process_file_with_extension(file_extension: str, 
+                                file_content: bytes, temp_file: str):
+    with open(temp_file, 'wb') as file:
+        file.write(file_content)
 
 
 def convert_api_params(body, command_def, secure_parameters):
@@ -93,12 +86,18 @@ def convert_api_params(body, command_def, secure_parameters):
             temp_files_list.append(temp_file)
             continue
 
-        if value and isinstance(value, bool):
+        is_flag = command_def['parameters'][def_map[key]].get('is_flag')
+        if is_flag:
+            if value not in [True, 'True', 'true']:
+                raise ModularApiBadRequestException(
+                    f'Unexpected value for the flag \'{key}\'. '
+                    f'Only \'True\' is allowed, got \'{value}\'.'
+                )
             pretty_param = convert_param(key)
             parameters_list.append(pretty_param)
             log_parameters_list.append(pretty_param)
 
-        elif isinstance(value, (str, int, float)):
+        elif isinstance(value, (str, int, float, bool)):
             parameters_list, log_parameters_list = \
                 build_param_and_value_in_click_format(
                     key, value, secure_parameters, parameters_list,

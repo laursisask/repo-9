@@ -3,28 +3,29 @@ import os
 import ast
 import sys
 from pathlib import Path
+import toml
+import configparser
 import subprocess
 import shlex
 from distutils.dir_util import remove_tree
 from shutil import copytree, ignore_patterns
 from unittest.mock import MagicMock
-import pkg_resources
+from importlib.metadata import distributions
 from packaging import version
 from ddtrace import tracer
-from version import modular_api_version as api_version
 from modular_api.helpers.constants import WINDOWS, LINUX, MODULES_DIR, \
     API_MODULE_FILE, MODULE_NAME_KEY, CLI_PATH_KEY, MOUNT_POINT_KEY, \
     TOOL_VERSION_MAPPING, DEPENDENCIES, MIN_VER
 from modular_api.commands_generator import generate_valid_commands
 from modular_api.helpers.decorators import CommandResponse
-from modular_api.helpers.exceptions import ModularApiBadRequestException, \
-    ModularApiConfigurationException, ModularApiInternalException
-from modular_api.helpers.log_helper import get_cli_logger
+from modular_api.helpers.exceptions import ModularApiBadRequestException
+from modular_api.helpers.log_helper import get_logger
+from modular_api.version import __version__
 
 DESCRIPTOR_REQUIRED_KEYS = (CLI_PATH_KEY, MOUNT_POINT_KEY, MODULE_NAME_KEY)
 MODULAR_ADMIN_ROOT_PATH = os.path.split(os.path.dirname(__file__))[0]
 tracer.configure(writer=MagicMock())
-_LOG = get_cli_logger('install_service')
+_LOG = get_logger(__name__)
 
 
 def install_module_with_destination_folder(paths_to_module: str):
@@ -45,21 +46,26 @@ def install_module_with_destination_folder(paths_to_module: str):
         sys.exit(message)
     _LOG.info(f"Going to execute pip install command for {paths_to_module}")
     os_name = os.name
+    command = f'pip install -e {paths_to_module}'
     if os_name == WINDOWS:
-        command = f'pip install -e {paths_to_module}'
-        terminal_process = subprocess.Popen(command,
-                                            stdout=subprocess.PIPE,
-                                            stderr=subprocess.STDOUT)
+        with subprocess.Popen(
+                command,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+        ) as terminal_process:
+            stdout, stderr = terminal_process.communicate()
+
     elif os_name == LINUX:
-        command = f'pip install -e {paths_to_module}'
-        terminal_process = subprocess.Popen(shlex.split(command),
-                                            stdout=subprocess.PIPE,
-                                            stderr=subprocess.STDOUT)
+        with subprocess.Popen(
+                shlex.split(command),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+        ) as terminal_process:
+            stdout, stderr = terminal_process.communicate()
     else:
         message = f'The {os_name} OS is not supported by tool.'
         _LOG.error(message)
         sys.exit(message)
-    stdout, stderr = terminal_process.communicate()
     if stdout is not None:
         stdout = stdout.decode('utf-8')
         _LOG.info(f"Out: {stdout}")
@@ -72,12 +78,13 @@ def install_module_with_destination_folder(paths_to_module: str):
 
 def write_generated_meta_to_file(path_to_file, mount_point, groups_meta):
     if not os.path.isfile(path_to_file):
-        cmd_base_content = json.dumps({mount_point: groups_meta}, indent=2)
+        cmd_base_content = json.dumps({mount_point: groups_meta},
+                                      separators=(',', ':'))
     else:
         with open(path_to_file, 'r') as cmd_base:
             cmd_base_content = json.load(cmd_base)
         cmd_base_content.update({mount_point: groups_meta})
-        cmd_base_content = json.dumps(cmd_base_content, indent=2)
+        cmd_base_content = json.dumps(cmd_base_content, separators=(',', ':'))
 
     with open(path_to_file, 'w') as cmd_base:
         cmd_base.write(cmd_base_content)
@@ -105,7 +112,7 @@ def check_module_requirements(api_module_config):
     if not dependencies:
         return
     candidate = api_module_config.get(MODULE_NAME_KEY)
-    installed_packages = pkg_resources.working_set
+    installed_packages = {dist.metadata['Name']: dist for dist in distributions()}
     for item in dependencies:
         # check dependent module is installed
         dependent_module_name = item.get(MODULE_NAME_KEY)
@@ -114,7 +121,7 @@ def check_module_requirements(api_module_config):
                       'descriptor file'
             _LOG.error(message)
             sys.exit(message)
-        installed_module_name = installed_packages.by_key.get(dependent_module_name)
+        installed_module_name = installed_packages.get(dependent_module_name)
         if not installed_module_name:
             message = f'Module "{dependent_module_name}" is marked as ' \
                       f'required for "{candidate}" module. Please install ' \
@@ -126,7 +133,7 @@ def check_module_requirements(api_module_config):
         if not dependency_min_version:
             break
         installing_major_min_version = version.parse(dependency_min_version).major
-        installed_major_version = installed_module_name.parsed_version.major
+        installed_major_version = version.parse(installed_module_name.version).major
         if installing_major_min_version > installed_major_version:
             message = f'Module "{candidate}" requires a later major version ' \
                       f'of "{dependent_module_name}". Please update ' \
@@ -135,17 +142,16 @@ def check_module_requirements(api_module_config):
             sys.exit(message)
 
 
-def check_module_requirements_compatibility(module_path, module_name):
+def extract_module_requirements_setup_py(module_path: str) -> list[str]:
     """
-    Function to ensure version compatibility between requirements in module to
-    be installed and Modular-API requirements
+    Extracts the dependencies from the setup.py file
+    :param module_path: path to the setup.py file
+    :return: a list of strings, where each string represents a dependency
     """
-    # get current dependencies list for Modular-API
-    modular_api_dependencies = [f"{lib.project_name}=={lib.version}" for lib in pkg_resources.working_set]
-
     # get dependencies for module to be installed
     module_dependencies = []
-    parsed = ast.parse(open(module_path).read())
+    with open(module_path) as module_file:
+        parsed = ast.parse(module_file.read())
     for node in parsed.body:
         if not isinstance(node, ast.Expr):
             continue
@@ -156,6 +162,62 @@ def check_module_requirements_compatibility(module_path, module_name):
         for keyword in node.value.keywords:
             if keyword.arg == "install_requires":
                 module_dependencies = ast.literal_eval(keyword.value)
+    return module_dependencies
+
+
+def extract_module_requirements_setup_cfg(module_path: str) -> list[str]:
+    """
+    Extracts the dependencies from a setup.cfg file
+    :param module_path: path to the setup.cfg file
+    :return: a list of strings, where each string represents a dependency
+    """
+    config = configparser.ConfigParser()
+    config.read(module_path)
+    try:
+        module_dependencies = config.get(
+            'options', 'install_requires'
+        ).split('\n')
+        module_dependencies = [
+            dependency for dependency in module_dependencies if dependency
+        ]
+    except (configparser.NoSectionError, configparser.NoOptionError):
+        module_dependencies = []
+
+    return module_dependencies
+
+
+def extract_module_requirements_toml(module_path: str) -> list[str]:
+    """
+    Extracts the dependencies from a pyproject.toml file
+    :param module_path: path to the pyproject.toml file
+    :return: a list of strings, where each string represents a dependency
+    """
+    # get dependencies for module to be installed
+    with open(module_path, 'r') as module_file:
+        parsed = toml.load(module_file)
+        module_dependencies = parsed['project']['dependencies']
+    return module_dependencies
+
+
+def check_module_requirements_compatibility(
+    module_dependencies: list[str], module_name: str
+):
+    """
+    Checks if the version requirements for the dependencies are compatible with
+    the modules currently installed in the API's dependency list
+    :param module_dependencies: a list of module dependencies
+    :param module_name: the name of the module whose dependencies are being
+    checked
+    :return: None, but raises SystemExit if a specific version is not provided
+    or there is a version conflict
+    """
+    # get current dependencies list for Modular-API
+    installed_packages = {
+        dist.metadata['Name']: dist.version for dist in distributions()
+    }
+    modular_api_dependencies = [
+        f"{name}=={ver}" for name, ver in installed_packages.items()
+    ]
 
     # check sticking for a specific version
     if not module_dependencies:
@@ -167,8 +229,10 @@ def check_module_requirements_compatibility(module_path, module_name):
         if ">=" in req:
             continue
         if len(req.split('==')) == 1:
-            message = f'Please add a specific version for package \'{req}\' in ' \
-                      f'module \'{module_name}\''
+            message = (
+                f'Please add a specific version for package \'{req}\' in module'
+                f' \'{module_name}\''
+            )
             _LOG.error(message)
             sys.exit(message)
 
@@ -202,12 +266,17 @@ def install_module(module_path):
     :param module_path: the path to the installing module
     :return: none
     """
+    extract_dependencies_func_map = {
+        'setup.py': extract_module_requirements_setup_py,
+        'setup.cfg': extract_module_requirements_setup_cfg,
+        'pyproject.toml': extract_module_requirements_toml
+    }
+    setup_files = ["pyproject.toml", "setup.cfg", "setup.py"]
     _LOG.info(f'Going to install module from path: {module_path}')
-    path_to_setup_file_in_module = os.path.join(module_path, 'setup.py')
-    if not os.path.isdir(module_path) or \
-            not os.path.isfile(path_to_setup_file_in_module):
-        incorrect_path_message = 'Provided path is incorrect or does not ' \
-                                 'contain setup.py file'
+    if not os.path.isdir(module_path):
+        incorrect_path_message = (
+            'Provided path is incorrect. It should be a directory.'
+        )
         _LOG.error(incorrect_path_message)
         sys.exit(incorrect_path_message)
 
@@ -215,18 +284,43 @@ def install_module(module_path):
         api_module_config = json.load(file)
 
     _LOG.info('Checking module descriptor properties')
-    if not all([key in api_module_config.keys()
-                for key in DESCRIPTOR_REQUIRED_KEYS]):
+    if not all(
+        [key in api_module_config.keys() for key in DESCRIPTOR_REQUIRED_KEYS]
+    ):
         descriptor_key_absence_message = \
             f'Descriptor file must contains the following keys: ' \
             f'{", ".join(DESCRIPTOR_REQUIRED_KEYS)}'
         _LOG.error(descriptor_key_absence_message)
         sys.exit(descriptor_key_absence_message)
 
-    _LOG.info('Checking module requirements compatibility')
-    check_module_requirements_compatibility(
-        module_path=path_to_setup_file_in_module,
-        module_name=api_module_config.get('module_name'))
+    # Check each setup file by priority
+    for setup_file in setup_files:
+        setup_file_path = os.path.join(module_path, setup_file)
+        if not os.path.isfile(setup_file_path):
+            continue  # Skip if file doesn't exist
+
+        _LOG.info('Checking module requirements compatibility')
+        try:
+            _LOG.info(f"Reading dependencies from: {setup_file}")
+            extract_func = extract_dependencies_func_map[setup_file]
+            module_dependencies = extract_func(
+                module_path=setup_file_path
+            )
+        except KeyError:
+            _LOG.error(f'Unsupported setup file: {setup_file}')
+            sys.exit(f'Unsupported setup file: {setup_file}')
+
+        check_module_requirements_compatibility(
+            module_dependencies=module_dependencies,
+            module_name=api_module_config.get('module_name')
+        )
+        # Found valid setup file, break the loop
+        _LOG.info(f"Successfully loaded dependencies from {setup_file}")
+        break
+    else:
+        _LOG.error("No valid setup file found")
+        sys.exit("No valid setup file found")
+
     _LOG.info('Checking module dependencies')
     check_module_requirements(api_module_config)
 
@@ -258,7 +352,7 @@ def install_module(module_path):
                                   *api_module_config[CLI_PATH_KEY].split('/')),
         mount_point=mount_point,
         is_private_mode_enabled=False,
-        path_to_setup_file_in_module=path_to_setup_file_in_module
+        path_to_setup_file_in_module=setup_file_path
     )
     web_service_cmd_base = os.path.join(modular_admin_path,
                                         'web_service',
@@ -406,9 +500,9 @@ def check_and_describe_modules(table_response, json_response):
     modular_cli_sdk_version = 'Modular-CLI-SDK: {0}'
     result_message = 'Installed modules:'
     pretty_table = list()
-    installed_packages = pkg_resources.working_set
+    installed_packages = {dist.metadata['Name']: dist.version for dist in distributions()}
     installed_packages_list = sorted(
-        ["%s@%s" % (i.key, i.version) for i in installed_packages]
+        ["%s@%s" % (name, version) for name, version in installed_packages.items()]
     )
 
     for module_name in installed_modules_list:
@@ -429,7 +523,7 @@ def check_and_describe_modules(table_response, json_response):
         modular_sdk_version = 'Modular-SDK: Not installed'
     if modular_cli_sdk_version == 'Modular-CLI-SDK: {0}':
         modular_cli_sdk_version = 'Modular-CLI-SDK: Not installed'
-    modular_version = f'Modular-API: {api_version}'
+    modular_version = f'Modular-API: {__version__}'
 
     if json_response:
         modular_sdk_item = modular_sdk_version.split(':')[0].lower()
@@ -437,7 +531,7 @@ def check_and_describe_modules(table_response, json_response):
         modular_cli_sdk_item = modular_cli_sdk_version.split(':')[0].lower()
         modular_cli_sdk_item_ver = modular_cli_sdk_version.split(':')[1].lower()
         result_json = {
-            'modular': api_version,
+            'modular': __version__,
             modular_sdk_item: modular_sdk_item_ver.strip(),
             modular_cli_sdk_item: modular_cli_sdk_item_ver.strip()
         }

@@ -1,8 +1,5 @@
-import json
-
-from web_service.iam import hash_user_name
-from helpers.request_processor import generate_route_meta_mapping
-from swagger.definition_templates import (get_open_api_spec_template, RESPONSES)
+from modular_api.swagger.definition_templates import (
+    get_open_api_spec_template, RESPONSES)
 
 
 def resolve_parameter_type(param_type: str) -> str:
@@ -31,7 +28,7 @@ def resolve_group_name(command_path):
     return command_path[start_index:end_index]
 
 
-def generate_definition(commands_def, output_file_name, prefix) -> None:
+def generate_definition(commands_def, prefix) -> dict:
     """
     Generate config file(openapi_spec.yaml) for OpenAPI 3.0
     according to M3admin commands(commands_base.json)
@@ -94,7 +91,7 @@ def generate_definition(commands_def, output_file_name, prefix) -> None:
                     "description": description,
                     "parameters": get_param,
                     "tags": [group_name],
-                    "security": [{'BasicAuth': []}],
+                    "security": [{'BasicAuth': []}, {'BearerAuth': []}],
                     "requestBody": post_param,
                     "responses": RESPONSES
                 }
@@ -106,20 +103,4 @@ def generate_definition(commands_def, output_file_name, prefix) -> None:
     open_api_spec_template = get_open_api_spec_template(prefix=prefix)
     open_api_spec_template["tags"] = result_groups
     open_api_spec_template["paths"] = result_paths
-
-    with open(output_file_name, 'w') as file:
-        json.dump(open_api_spec_template, file)
-
-
-def associate_definition_with_group(username, swagger_path, prefix,
-                                    available_commands):
-    output_file = f'{username}_swagger.json'
-    route_meta_mapping = generate_route_meta_mapping(
-        commands_meta=available_commands)
-
-    generate_definition(commands_def=route_meta_mapping,
-                        output_file_name=output_file,
-                        prefix=prefix)
-    group_swagger_link = f'{prefix}{swagger_path}/' \
-                         f'{hash_user_name(user_name=username)}'
-    return group_swagger_link, output_file
+    return open_api_spec_template

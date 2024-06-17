@@ -13,10 +13,10 @@ def policy():
 
 
 def policy_handler_instance():
-    group_service = SERVICE_PROVIDER.group_service()
-    policy_service = SERVICE_PROVIDER.policy_service()
-    return PolicyHandler(policy_service=policy_service,
-                         group_service=group_service)
+    return PolicyHandler(
+        policy_service=SERVICE_PROVIDER.policy_service,
+        group_service=SERVICE_PROVIDER.group_service
+    )
 
 
 @policy.command(cls=BaseCommand)
@@ -57,15 +57,23 @@ def update(policy, policy_path):
               help='Specify to describe policies with content. '
                    'Has no effect and always \'True\' if \'--policy\' '
                    'parameter passed')
+@click.option('--json', is_flag=True,
+              help='Show response as JSON. Can not be used with --table '
+                   'parameter')
+@click.pass_context
 @ResponseDecorator(click.echo, 'Can not describe policy')
-def describe(policy, expand):
+def describe(ctx, policy, expand, json):
     """
     Describes permissions defined in policy.
     """
     if policy:
         expand = True
+
+    table = ctx.params.get('table', False)
     return policy_handler_instance().describe_policy_handler(
-        policy=policy, expand_view=expand)
+        policy=policy, expand_view=expand, json_response=json,
+        table_response=table
+    )
 
 
 @policy.command(cls=BaseCommand)

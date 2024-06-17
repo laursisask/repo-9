@@ -1,8 +1,13 @@
 import click
 
+from modular_api.helpers.constants import (
+    MODULAR_USER_META_TYPES, ALLOWED_VALUES,
+)
 from modular_api.services import SERVICE_PROVIDER
 from modular_api_cli.modular_handler.user_handler import UserHandler
-from modular_api.helpers.decorators import BaseCommand, ResponseDecorator, produce_audit
+from modular_api.helpers.decorators import (
+    BaseCommand, ResponseDecorator, produce_audit,
+)
 
 
 @click.group()
@@ -13,12 +18,11 @@ def user():
 
 
 def user_handler_instance():
-    user_service = SERVICE_PROVIDER.user_service()
-    group_service = SERVICE_PROVIDER.group_service()
-    policy_service = SERVICE_PROVIDER.policy_service()
-    return UserHandler(user_service=user_service,
-                       group_service=group_service,
-                       policy_service=policy_service)
+    return UserHandler(
+        user_service=SERVICE_PROVIDER.user_service,
+        group_service=SERVICE_PROVIDER.group_service,
+        policy_service=SERVICE_PROVIDER.policy_service
+    )
 
 
 @user.command(cls=BaseCommand)
@@ -143,21 +147,36 @@ def remove_from_group(username, group):
     )
 
 
-@user.command(cls=BaseCommand)
+@user.command(cls=BaseCommand, name='describe')
 @click.option('--username', '-u', type=str,
               help='Username. If not specified - all existing users will '
                    'be listed')
+@click.option('--json', is_flag=True,
+              help='Show response as JSON. Can not be used with --table '
+                   'parameter')
+@click.pass_context
 @ResponseDecorator(click.echo, 'Can not describe user')
-def describe(username):
+def describe(ctx, username, json):
     """
     Describes user(s) information
     """
-    return user_handler_instance().describe_user_handler(username=username)
+    table = ctx.params.get('table', False)
+    return user_handler_instance().describe_user_handler(
+        username=username,
+        table_response=table,
+        json_response=json
+    )
 
 
 @user.command(cls=BaseCommand, name='set_meta_attribute')
 @click.option('--username', '-u', type=str, required=True,
-              help='User name')
+              help='Username')
+@click.option('--meta_type', '-mt', default=ALLOWED_VALUES,
+              type=click.Choice(MODULAR_USER_META_TYPES, False),
+              help='Type of meta. Supports two types: "allowed_values": '
+                   'restricts the parameters allowed for the user (Default). '
+                   '"aux_data": stores additional private user data for '
+                   'customized usage.')
 @click.option('--key', '-k', type=str, required=True,
               help='Parameter name')
 @click.option('--value', '-v', type=str, required=True,
@@ -165,48 +184,59 @@ def describe(username):
               help='Parameter value. Multiple values allowed (e.g. '
                    '--value value1 --value value2).')
 @ResponseDecorator(click.echo, 'Can not set user meta')
-def set_meta_attribute(username, key, value):
+def set_meta_attribute(username, meta_type, key, value):
     """
-    Add or replace if exists user meta information with parameter name and its
-    values that are allowed to be executed by the user
+    Add or replace Modular user meta information.
     """
     return user_handler_instance().set_user_meta_handler(
-        username=username, key=key, values=value)
+        username=username, meta_type=meta_type, key=key, values=value,
+    )
 
 
 @user.command(cls=BaseCommand, name='update_meta_attribute')
 @click.option('--username', '-u', type=str, required=True,
               help='User name')
+@click.option('--meta_type', '-mt', default=ALLOWED_VALUES,
+              type=click.Choice(MODULAR_USER_META_TYPES, False),
+              help='Type of meta. Supports two types: "allowed_values": '
+                   'restricts the parameters allowed for the user (Default). '
+                   '"aux_data": stores additional private user data for '
+                   'customized usage.')
 @click.option('--key', '-k', type=str, required=True,
               help='Parameter name')
-@click.option('--value', '-v', type=str, required=True,
-              multiple=True,
+@click.option('--value', '-v', type=str, required=True, multiple=True,
               help='Parameter value. Multiple values allowed (e.g. '
                    '--value value1 --value value2).')
 @ResponseDecorator(click.echo, 'Can not update user meta')
-def update_meta_attribute(username, key, value):
+def update_meta_attribute(username, meta_type, key, value):
     """
-    Update user meta information with parameter name and its values that are
-    allowed to be executed by the user
+    Update Modular user meta information.
     """
     return user_handler_instance().update_user_meta_handler(
-        username=username, key=key, values=value)
+        username=username, meta_type=meta_type, key=key, values=value,
+    )
 
 
 @user.command(cls=BaseCommand, name='delete_meta_attribute')
 @click.option('--username', '-u', type=str, required=True,
               help='User name')
-@click.option('--key', '-k', type=str, required=True,
-              multiple=True,
+@click.option('--meta_type', '-mt', default=ALLOWED_VALUES,
+              type=click.Choice(MODULAR_USER_META_TYPES, False),
+              help='Type of meta. Supports two types: "allowed_values": '
+                   'restricts the parameters allowed for the user (Default). '
+                   '"aux_data": stores additional private user data for '
+                   'customized usage.')
+@click.option('--key', '-k', type=str, required=True, multiple=True,
               help='Parameter name. Multiple values allowed (e.g. '
                    '--key value1 --key value2).')
 @ResponseDecorator(click.echo, 'Can not delete user meta')
-def delete_meta_attribute(username, key):
+def delete_meta_attribute(username, meta_type, key):
     """
     Delete parameter/s name from the user meta information
     """
     return user_handler_instance().delete_user_meta_handler(
-        username=username, keys=key)
+        username=username, meta_type=meta_type, keys=key,
+    )
 
 
 @user.command(cls=BaseCommand, name='reset_meta')
@@ -224,10 +254,18 @@ def reset_meta(username):
 @user.command(cls=BaseCommand, name='get_meta')
 @click.option('--username', '-u', type=str, required=True,
               help='User name')
+@click.option('--json', is_flag=True,
+              help='Show response as JSON. Can not be used with --table '
+                   'parameter')
+@click.pass_context
 @ResponseDecorator(click.echo, 'Can not describe user meta')
-def get_meta(username):
+def get_meta(ctx, username, json):
     """
     Describe meta information for the specified user
     """
+    table = ctx.params.get('table', False)
     return user_handler_instance().describe_user_meta_handler(
-        username=username)
+        username=username,
+        json_response=json,
+        table_response=table
+    )

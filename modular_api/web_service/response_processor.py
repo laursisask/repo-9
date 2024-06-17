@@ -1,12 +1,14 @@
 import urllib
 
-from helpers.exceptions import ModularApiInternalException, \
+from modular_api.helpers.exceptions import ModularApiInternalException, \
     ModularApiBadRequestException, ModularApiUnauthorizedException
 from pynamodb.exceptions import GetError
-from helpers.log_helper import get_logger
+from modular_api.helpers.log_helper import get_logger
 
 M3MODULAR_ERROR_TYPE_KEY = 'error_type'
 M3MODULAR_ERROR_MESSAGE_KEY = 'message'
+
+_LOG = get_logger(__name__)
 
 
 def build_exception_content(exception):
@@ -27,7 +29,6 @@ def build_exception_content(exception):
 
 
 def __check_user_allowed_values(user_meta, requested_params):
-    _LOG = get_logger('__check_user_allowed_values')
     requested_params_names = requested_params.keys()
     for parameter in requested_params_names:
         if parameter in user_meta.keys():
@@ -39,7 +40,7 @@ def __check_user_allowed_values(user_meta, requested_params):
             if user_value not in allow_list:
                 invalid_requested_parameter_message = \
                     f'Invalid request for your user. Allowed value(s) ' \
-                    f'for {parameter}: {user_meta[parameter]}'
+                    f'for \'{parameter}\': {user_meta[parameter]}'
                 _LOG.error(invalid_requested_parameter_message)
                 raise ModularApiBadRequestException(
                     invalid_requested_parameter_message
@@ -47,8 +48,6 @@ def __check_user_allowed_values(user_meta, requested_params):
 
 
 def validate_request(command, req_params, method, user_meta):
-    _LOG = get_logger('validate_request')
-    _LOG.info('Going to validate incoming request')
     if command['route']['method'] != method:
         raise ModularApiBadRequestException(
             f'The command {command["route"]["method"]} '
@@ -99,8 +98,6 @@ def extract_and_convert_parameters(request, command_def):
                     param_value = param_value.replace('+', ' ')
                 value = urllib.parse.unquote(param_value)
                 param = urllib.parse.unquote(param_name)
-                if type_map.get(param_name) == 'bool':
-                    value = value.lower() == 'true'
                 result[param] = value
     else:
         result = {} if not request.json else request.json

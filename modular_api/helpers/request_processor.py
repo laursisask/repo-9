@@ -3,6 +3,7 @@ import copy
 
 def iterate_through_dict_values(result_meta, commands_meta, command_meta,
                                 mount_point):
+    # TODO why two copies?. Does not seem right
     for key, value in commands_meta.items():
         if isinstance(value, dict):
             if key.startswith('/'):

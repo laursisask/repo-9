@@ -1,5 +1,120 @@
 CHANGELOG
 
+# [4.0.2] - 2024-04-29
+* Fix meta keys validation logic to operate independent of file formatting
+
+# [4.0.1] - 2024-04-22
+* Fix `internal server error` when trying to `login` without a `username` (in SaaS mode)
+
+# [4.0.0] - 2024-03-21
+- remove tinydb, move to mongodb
+- rewrite wsgi application builder
+- make swagger open
+- remove not used code and not used libs
+- refactor slightly
+- add ability to start gunicorn server, move server start command to cli
+- remove `startup_config.json`. Replace it with cli parameters and environment variables. Add `.env` file support.
+
+# [3.3.21] - 2024-04-09
+* Fix issues related to CLI version WARNING
+  * Resolve bug associated with CLI version WARNING
+  * Adjust `@property` decorator usage. Now accessible as an attribute, not a 
+  method. Make necessary replacements where required
+
+# [3.3.19] - 2024-03-25
+* Fix an issue where the last line of the error message was lost in the
+  `exception_log` function.
+* Updates related to `ModularUser` include:
+  * Update `meta` field to now store two types of meta: `allowed_values` and `aux_data`.
+  * Include `--meta_type` parameter in `modular user set_meta_attribute` command.
+    This parameter allows two types, `allowed_values` (set as `default` if this
+    flag is not provided) and `aux_data`.
+  * Add sorting to `meta` field in `ModularUser` table to ensure consistent
+    order, preventing different hashes generation from different orders.
+    This new function sorts dictionaries and lists at any depth level.
+  * Add `aux_data` to `thread-local storage`. Retrieve this from the db using
+    the user located in `ModularUser.meta`.
+  * Update commands to ensure compatibility with changes related to `meta`:
+    * `set_meta_attribute`, `update_meta_attribute`, `delete_meta_attribute`,
+      `reset_meta`, `get_meta`
+
+# [3.3.18] - 2024-03-11
+* `swagger-ui-py` from 21.12.8 to 23.9.23
+* Implement fixes and improvements for `swagger-ui`:
+  * The logic for `login`:
+    * Unauthorized users are now provide with an empty `swagger.json` file
+    * Generate new `swagger.json` instead of new `page`
+  * Add middleware to capture all `swagger.json` files
+  * Imports for exceptions
+
+# [3.3.17] - 2024-03-18
+* hide error logs when starting server on MacOS
+* remove `PyYAML` from setup.py
+* Fix an issue that occurred while saving `meta` for `ModularUser` in on-prem mode
+* Add `meta` to `thread local storage`, which contains the `ModularUser` field `meta`
+* Add `service_name` and `service_display_name` in the allowed values for `meta`
+* Add sorting of the `meta` field in the `ModularUser` table to ensure a
+consistent order, as different orders can generate different hashes
+
+# [3.3.16] - 2024-03-01
+* Add a new class `FileHandlerManager` to the log_helper file to prevent the
+`Too Many Open Files` error
+
+# [3.3.15] - 2024-02-28
+* Implement throttle manager: `Too Many Requests`
+* Add a new value `"limit_api_call": 30` to `startup_config.json`, where `30`
+represents the maximum number of calls per second. If no value is provided, the
+default is set to `10`
+
+# [3.3.14] - 2024-02-28
+* Fix issue: `Too many open files`
+
+# [3.3.13] - 2024-02-26
+* Add the ability to install modules inside `modular-api` using `setup.cfg` and
+`pyproject.toml`
+
+# [3.3.12] - 2023-12-07
+* Json flag added for next commands:
+`user describe`, `user get_meta`, `policy describe`, `group describe`, `audit`
+
+# [3.3.11] - 2023-12-07
+* Update `exception_log()` to use a `with` block when opening the `LOG_FILE`,
+ensuring the file gets properly closed after operations are completed.
+* Fix file handling in `check_module_requirements_compatibility()`. Previously,
+the `module_path` file was opened for analysis but not closed properly.
+
+# [3.3.10] - 2023-11-03
+* Implemented proper bool type option processing in direct API requests
+
+# [3.3.9] - 2023-11-01
+* Fix command `modular user add` if the password was entered by the user then
+  it will not be displayed
+
+# [3.3.8] - 2023-11-01
+* Fix flag value resolving
+
+# [3.3.7] - 2023-10-31
+* Fix modules installation issue
+
+# [3.3.6] - 2023-10-30
+* Implemented proper bool type command option processing.
+
+# [3.3.5] - 2023-10-25
+* Fix setuptools deprecation warning. Change `pkg_resources` to `importlib.metadata`
+
+# [3.3.4] - 2023-10-25
+* Standardized name of keys of stats item
+* Added mechanism of native module name inclusion to stats item.
+
+# [3.3.3] - 2023-10-18
+* Changed statistic item ID generation method.
+* Verification script adapted to new item ID generation method.
+
+# [3.3.2] - 2023-10-17
+* Reduce calls to modular_api_log from modular_api_cli
+* Add environment variables to configure separate log paths for modular_api and
+modular_api_cli logs
+
 # [3.3.1] - 2023-10-05
 * Resolve payload, handle empty exec_status in save_stats method
 

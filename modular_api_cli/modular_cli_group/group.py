@@ -13,12 +13,11 @@ def group():
 
 
 def group_handler_instance():
-    group_service = SERVICE_PROVIDER.group_service()
-    policy_service = SERVICE_PROVIDER.policy_service()
-    user_service = SERVICE_PROVIDER.user_service()
-    return GroupHandler(group_service=group_service,
-                        policy_service=policy_service,
-                        user_service=user_service)
+    return GroupHandler(
+        group_service=SERVICE_PROVIDER.group_service,
+        policy_service=SERVICE_PROVIDER.policy_service,
+        user_service=SERVICE_PROVIDER.user_service
+    )
 
 
 @group.command(cls=BaseCommand)
@@ -70,12 +69,18 @@ def delete_policy(group, policy):
 @click.option('--group', '-g', type=str,
               help='Group name. If not specified then all existing groups will'
                    'be listed')
+@click.option('--json', is_flag=True,
+              help='Show response as JSON. Can not be used with --table '
+                   'parameter')
+@click.pass_context
 @ResponseDecorator(click.echo, 'Can not describe group')
-def describe(group):
+def describe(ctx, group, json):
     """
     Describes specified group or list all groups
     """
-    return group_handler_instance().describe_group_handler(group=group)
+    table = ctx.params.get('table', False)
+    return group_handler_instance().describe_group_handler(
+        group=group, table_response=table, json_response=json)
 
 
 @group.command(cls=BaseCommand)

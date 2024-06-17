@@ -1,8 +1,9 @@
+import json
 import os
 
 import click
 
-from modular_api.helpers.log_helper import get_cli_logger
+from modular_api.helpers.log_helper import get_logger
 from modular_api.models.group_model import Group
 from modular_api.helpers.constants import REMOVED_STATE, ACTIVATED_STATE
 from modular_api.services.group_service import GroupService
@@ -14,7 +15,7 @@ from modular_api.helpers.exceptions import ModularApiBadRequestException, \
 from modular_api.helpers.file_helper import open_json_file
 
 line_sep = os.linesep
-_LOG = get_cli_logger('policy_handler')
+_LOG = get_logger(__name__)
 
 
 class PolicyHandler:
@@ -58,7 +59,8 @@ class PolicyHandler:
         policy_validation(policy_content=policy_content)
         policy_item = self.policy_service.create_policy_entity(
             policy_name=policy,
-            policy_content=policy_content)
+            policy_content=policy_content
+        )
 
         policy_hash_sum = self.policy_service.calculate_policy_hash(
             policy_item=policy_item
@@ -103,8 +105,8 @@ class PolicyHandler:
 
         policy_content = open_json_file(file_path=policy_path)
         policy_validation(policy_content=policy_content)
-        policy_item.policy_content = policy_content
-        policy_item.last_modification_date = utc_time_now()
+        policy_item.content = policy_content
+        policy_item.last_modification_date = utc_time_now().isoformat()
 
         policy_hash_sum = self.policy_service.calculate_policy_hash(
             policy_item=policy_item)
@@ -122,13 +124,23 @@ class PolicyHandler:
                 'Policy(ies) not exists. To add policy please execute '
                 '\'modular policy add\' command')
 
-    def describe_policy_handler(self, policy: str, expand_view: bool) -> CommandResponse:
+    def describe_policy_handler(self, policy: str, expand_view: bool,
+                                json_response, table_response
+                                ) -> CommandResponse:
         """
         Describes policy content from ModularPolicy table for specified name
         or list all existed policies
+        :param expand_view: output will have more policy content
         :param policy: Optional. Policy name which will be described
+        :param json_response: output will be in json format
+        :param table_response: output will be in table format
         :return: CommandResponse
         """
+
+        if table_response and json_response:
+            _LOG.error('Wrong parameters passed')
+            raise ModularApiBadRequestException(
+                'Please specify only one parameter - table or json')
 
         _LOG.info(f'Going to describe policy \'{policy}\'')
         invalid = 0
@@ -149,7 +161,7 @@ class PolicyHandler:
 
             pretty_user_item = {
                 'Policy Name': policy.policy_name,
-                'Policy Content': policy.policy_content,
+                'Policy Content': policy.content,
                 'State': policy.state,
                 'Last Modification Date': convert_datetime_to_human_readable(
                     datetime_object=policy.last_modification_date
@@ -165,6 +177,12 @@ class PolicyHandler:
         valid_title = 'Policy(ies) description'
         compromised_title = f'Policy(ies) description{os.linesep}WARNING! ' \
                             f'{invalid} compromised policy(ies) have been detected.'
+
+        if json_response:
+            return CommandResponse(
+                message=json.dumps(pretty_policies, indent=4)
+            )
+
         return CommandResponse(
             table_title=compromised_title if invalid else valid_title,
             items=pretty_policies)
@@ -199,7 +217,7 @@ class PolicyHandler:
 
         self._check_policy_in_groups(policy_name=policy)
         policy_item.state = REMOVED_STATE
-        policy_item.last_modification_date = utc_time_now()
+        policy_item.last_modification_date = utc_time_now().isoformat()
         policy_hash_sum = self.policy_service.calculate_policy_hash(
             policy_item=policy_item)
         policy_item.hash = policy_hash_sum

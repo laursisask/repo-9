@@ -1,25 +1,25 @@
 import os
 
-from pynamodb.attributes import UnicodeAttribute, ListAttribute, \
-    UTCDateTimeAttribute
+from pynamodb.attributes import UnicodeAttribute, ListAttribute
 
-from modular_api.models.base_model import BaseModel
+from modular_api.helpers.constants import Env
 from modular_api.helpers.date_utils import convert_datetime_to_human_readable
+from modular_api.models import BaseModel
 
 
 class Group(BaseModel):
     class Meta:
         table_name = 'ModularGroup'
-        region = os.environ.get('AWS_REGION')
+        region = os.environ.get(Env.AWS_REGION)
 
     group_name = UnicodeAttribute(hash_key=True)
     state = UnicodeAttribute()
-    policies = ListAttribute()
-    last_modification_date = UTCDateTimeAttribute(null=True)
-    creation_date = UTCDateTimeAttribute(null=True)
+    policies = ListAttribute(default=list)
+    last_modification_date = UnicodeAttribute(null=True)
+    creation_date = UnicodeAttribute(null=True)
     hash = UnicodeAttribute()
 
-    def response_object_without_hash(self):
+    def response_object_without_hash(self) -> dict:
         return {
             'group_name': self.group_name,
             'state': self.state,
