@@ -104,6 +104,17 @@ The content template is placed below:
   * **"minimal_allowed_cli_version"**: check Modular-CLI version, for example - "1.1". If Modular-CLI version 
     lower than specified in property - warning message will be shown to the user  
 
+#### Loggers configuration
+
+There is an option to customize log files paths for Modular API and 
+Modular API CLI using optional environment variables that are described below:
+
+* `SERVICE_LOGS` - custom full path of the Modular API logs
+* `MODULAR_API_CLI_LOGS` - custom full path of the Modular API CLI logs
+
+
+
+
 [Content ↑](#content)
 
 <a name="policies_management"></a> 
@@ -359,8 +370,7 @@ without saving
 <a name="project_information"></a> 
 ## 10. Project Information
 
-**Source Code**: https://git.epam.com/epmc-eoos/m3-modular-admin/  
-**Documentation**: https://git.epam.com/epmc-eoos/m3-modular-admin/-/blob/master/README.md  
-**Changelog**: https://git.epam.com/epmc-eoos/m3-modular-admin/-/blob/master/CHANGELOG.md  
-**Supported Python Version**: 3.9  
-**Support**:  Oleksandr_Onsha@epam.com
+**Source Code**: https://github.com/epam/modular-api  
+**Documentation**: https://github.com/epam/modular-api/blob/main//README.md  
+**Changelog**: https://github.com/epam/modular-api/blob/main/CHANGELOG.md  
+**Supported Python Version**: 3.9

@@ -1,8 +1,9 @@
+import json
 import os
 
 import click
 
-from modular_api.helpers.log_helper import get_cli_logger
+from modular_api.helpers.log_helper import get_logger
 from modular_api.models.user_model import User
 from modular_api.helpers.constants import REMOVED_STATE, ACTIVATED_STATE
 from modular_api.services.group_service import GroupService
@@ -14,7 +15,7 @@ from modular_api.helpers.exceptions import ModularApiBadRequestException, \
     ModularApiConflictException
 
 line_sep = os.linesep
-_LOG = get_cli_logger('group_handler')
+_LOG = get_logger(__name__)
 
 
 class GroupHandler:
@@ -22,14 +23,6 @@ class GroupHandler:
         self.user_service: UserService = user_service
         self.group_service: GroupService = group_service
         self.policy_service: PolicyService = policy_service
-
-    def is_provided_policies_exists(self, policies):
-        available_policies = self.policy_service.extract_policies_names()
-        if not set(policies).issubset(available_policies):
-            raise ModularApiBadRequestException(
-                f'Provided polices does not exists: '
-                f'{set(policies).difference(available_policies)}{line_sep} '
-                f'Policies can be added with \'modular policy add\' command')
 
     def add_group_handler(self, group: str, policies: list) -> CommandResponse:
         """
@@ -108,7 +101,8 @@ class GroupHandler:
 
         group_item = self.group_service.create_group_entity(
             group_name=group,
-            policies=policies)
+            policies=policies
+        )
 
         group_hash_sum = self.group_service.calculate_group_hash(
             group_item=group_item
@@ -251,7 +245,7 @@ class GroupHandler:
         else:
             raise ModularApiBadRequestException('Invalid action requested')
 
-        group_item.last_modification_date = utc_time_now()
+        group_item.last_modification_date = utc_time_now().isoformat()
         group_hash_sum = self.group_service.calculate_group_hash(group_item)
         group_item.hash = group_hash_sum
         self.group_service.save_group(group_item=group_item)
@@ -272,13 +266,21 @@ class GroupHandler:
             raise ModularApiBadRequestException(
                 'Group(s) does not exist. Please check spelling')
 
-    def describe_group_handler(self, group: str) -> CommandResponse:
+    def describe_group_handler(self, group: str, table_response,
+                              json_response) -> CommandResponse:
         """
         Describes group content from ModularGroup table for specified group or
         list all existed groups
         :param group: Optional. group name which will be described
+        :param table_response: output will be in table format
+        :param json_response: output will be in json format
         :return: CommandResponse
         """
+
+        if table_response and json_response:
+            _LOG.error('Wrong parameters passed')
+            raise ModularApiBadRequestException(
+                'Please specify only one parameter - table or json')
 
         _LOG.info(f'Going to describe \'{group}\'')
         if group:
@@ -287,7 +289,7 @@ class GroupHandler:
         else:
             existed_groups = self.group_service.scan_groups()
 
-        self.check_group_items_exist(group_items=existed_groups)
+        self.check_group_items_exist(group_items=existed_groups)  # todo fix bug
         existed_groups = existed_groups if not group else [existed_groups]
         pretty_groups = []
         invalid = 0
@@ -314,6 +316,10 @@ class GroupHandler:
         compromised_title = f'Group(s) description{os.linesep}WARNING! ' \
                             f'{invalid} compromised group(s) have been detected.'
 
+        if json_response:
+            return CommandResponse(
+                message=json.dumps(pretty_groups, indent=4)
+            )
         return CommandResponse(
             table_title=compromised_title if invalid else valid_title,
             items=pretty_groups)
@@ -346,7 +352,7 @@ class GroupHandler:
                 f'Are you sure?', abort=True)
 
         group_item.state = REMOVED_STATE
-        group_item.last_modification_date = utc_time_now()
+        group_item.last_modification_date = utc_time_now().isoformat()
         group_hash_sum = self.group_service.calculate_group_hash(group_item)
         group_item.hash = group_hash_sum
         self.group_service.save_group(group_item=group_item)

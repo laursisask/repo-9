@@ -1,27 +1,24 @@
 import copy
+import importlib
+import inspect
 import os
 import re
-import inspect
-import importlib
 import sys
 from datetime import datetime, timedelta
 from unittest.mock import patch
 
 from click import Group
+from click.types import Choice, IntRange, FloatRange
 
 from modular_api.helpers.log_helper import get_logger
-from click.types import Choice, IntRange, FloatRange
 
 ALLOWED_EXTENSIONS_PATTERN = r"(?<=allowed_extensions=\[)['., \w]+(?=])"
 
 GROUP_NAME_SEPARATOR = '_'
 DEFAULT_METHOD = 'POST'
 
-_LOG = get_logger('commands_generator')
+_LOG = get_logger(__name__)
 
-DEFAULT_COMMAND_BASE_FILE_NAME = 'commands_base.json'
-
-private_mode_groups = ['private']
 
 FILE_CHECKS_CALLBACKS = ['callback=check_path_exists_required',
                          'callback=check_path_exists_optional',
@@ -76,7 +73,7 @@ def get_file_names_which_contains_admin_commands(path_to_scan):
 def _resolve_root_group_name(file_content):
     root_group_name = None
     for idx, line in enumerate(file_content):
-        if 'console_scripts' in line:
+        if 'project.scripts' in line or 'console_scripts' in line:
             root_file_path = file_content[idx + 1]
             root_group_name = re.findall(r"(?<=\.)[^.:\s]+(?=:)", root_file_path)
     if not root_group_name:
@@ -161,133 +158,6 @@ def __resolve_group_name(group_filename):
     return group_filename.split(GROUP_NAME_SEPARATOR)
 
 
-def _analyze_file(group_file, group_full_name, path_to_scan, mount_point):
-    _LOG.info(f'[commands] processing group: {group_full_name}')
-    with open(f'{path_to_scan}/{group_file}',
-              'r+', encoding='UTF8') as group_file_content:
-        group_content = group_file_content.read()
-    return _return_commands_definitions(group_full_name, group_content,
-                                        mount_point)
-
-
-def _get_default_route_config(group_full_name, command_name, mount_point):
-    full_group_path = '/'.join(group_full_name) if type(
-        group_full_name) == list else group_full_name
-    path = f'/{full_group_path}/{command_name}' if mount_point == '/' \
-        else f'{mount_point}/{full_group_path}/{command_name}'
-    return {
-        'method': DEFAULT_METHOD,
-        'path': path
-    }
-
-
-def _get_command_handler_from_line(line):
-    line_which_contains_handler = line.split()[1]
-    end_index = line_which_contains_handler.index('(')
-    handler = line_which_contains_handler[:end_index]
-    return handler
-
-
-def _return_commands_definitions(group_full_name, group_content, mount_point):
-    group_name = group_full_name
-    if isinstance(group_full_name, list):
-        group_name = group_full_name[-1]
-    lines = group_content.split('\n')
-    command_definitions = {}
-    for index, line in enumerate(lines):
-        if line.startswith('#'):
-            continue
-        if f'@{group_name}.command' in line:
-            # find from @{group}.command to enclosing  """ of docstring
-            command_lines = [line]
-            comment_close_sum_counter = 0
-            counter = 1
-            # definition of command function
-            command_def_line_passed = False
-            while comment_close_sum_counter != 2:
-                current_line = lines[index + counter]
-                if 'def ' in current_line:
-                    command_def_line_passed = True
-                if command_def_line_passed and '):' in current_line and \
-                        '\"\"\"' not in lines[index + counter + 1]:
-                    comment_close_sum_counter = 2  # to break the loop
-                if '\"\"\"' in current_line:
-                    comment_close_sum_counter += 1
-                    counter += 1
-                    continue
-
-                command_lines.append(current_line.strip())
-                counter += 1
-            # prepare for analyze
-            prepared_lines = []
-            for i, line in enumerate(command_lines):
-                if not str(line).startswith('@') and not str(line).startswith(
-                        'def'):
-                    prepared_lines[-1] = prepared_lines[-1] + line
-                else:
-                    prepared_lines.append(line)
-
-            # analyze lines
-            parameters = []
-            name = None
-            route_config = {}
-            handler = None
-            secure_parameters = []
-            for line in prepared_lines:
-                # get command name
-                if f'@{group_name}.command' in line:
-                    name = _get_command_name_from_line(line)
-
-                if '@click.option' in line:
-                    parameters.append(_get_param_def_from_line(line))
-
-                if '@api_route' in line:
-                    route_config = _get_route_configuration_from_line(
-                        line=line, default=route_config)
-
-                if 'def ' in line:
-                    handler = _get_command_handler_from_line(line=line)
-
-                if '@produce_audit(secured_params=' in line:
-                    secure_parameters = _get_parameters_to_be_secured(line)
-
-            default_rt = _get_default_route_config(
-                group_full_name=group_full_name,
-                command_name=name,
-                mount_point=mount_point)
-            route_config = _merge_route_configs(primary=route_config,
-                                                secondary=default_rt)
-
-            command_doc = _get_command_doc_from_line(prepared_lines[-1])
-            if not command_doc:
-                _LOG.warn(
-                    f'The command {name} from group {group_full_name} '
-                    f'contains no command description')
-            definition = {
-                'body': {'description': command_doc,
-                         'parameters': parameters,
-                         'route': route_config,
-                         'handler': handler,
-                         'secure_parameters': secure_parameters,
-                         'parent': group_name},
-                'type': 'command'
-            }
-            command_definitions.update({name: definition})
-
-    return command_definitions
-
-
-def _merge_route_configs(primary, secondary):
-    for node in secondary:
-        if primary.get(node):
-            secondary[node] = primary.get(node)
-    return secondary
-
-
-def _get_command_name_from_line(line):
-    return line.split('\'')[1]
-
-
 def _get_param_def_from_line(line):
     if '\'\'' in line:
         line = line.replace('\'\'', '')
@@ -296,9 +166,11 @@ def _get_param_def_from_line(line):
     param_doc = None
     alias_name = None
     param_type = 'str'
+    is_flag = False
     is_path_to_file = False
     file_extension = None
     for index, part in enumerate(split):
+        # todo this all does not seem right...
         if any(i in part for i in FILE_CHECKS_CALLBACKS):
             is_path_to_file = True
             match = re.search(ALLOWED_EXTENSIONS_PATTERN, line)
@@ -317,6 +189,7 @@ def _get_param_def_from_line(line):
                 else param_doc
         if 'is_flag' in part:
             param_type = 'bool'
+            is_flag = True
         if 'type' in part:
             click_type = part.split('type=', 1)[-1].split(',')[0]
             if 'Choice' in click_type:
@@ -335,50 +208,14 @@ def _get_param_def_from_line(line):
         'alias': alias_name,
         'required': param_required,
         'description': param_doc,
-        'type': param_type
+        'type': param_type,
+        'is_flag': is_flag
     }
     if is_path_to_file:
         response['convert_content_to_file'] = is_path_to_file
     if file_extension:
         response['temp_file_extension'] = file_extension
     return response
-
-
-def _get_route_configuration_from_line(line, default):
-    default_route = {'method': 'GET'}
-    if '=' not in line:
-        return default_route
-
-    line = line.replace('\'', '')
-    start_index = line.index('(')
-    end_index = line.index(')')
-    line = line[start_index + 1: end_index]  #
-    parameters = line.split(',')
-    for parameter_def in parameters:
-        split = parameter_def.split('=')
-        name = split[0].strip()
-        value = split[1].strip()
-        default_route[name] = value
-    return default_route
-
-
-def _get_parameters_to_be_secured(line):
-    parameters_to_be_secured = []
-
-    line = line.replace('\'', '')
-    start_index = line.index('[')
-    end_index = line.index(']')
-    line = line[start_index + 1: end_index]
-    parameters = line.split(',')
-
-    for parameter in parameters:
-        parameters_to_be_secured.append(parameter.strip())
-
-    return parameters_to_be_secured
-
-
-def _get_command_doc_from_line(line):
-    return line.split(':')[1]
 
 
 class CommandsDefinitionsExtractor:
@@ -469,7 +306,7 @@ class CommandsDefinitionsExtractor:
 
         return parameters_to_be_secured
 
-    def _get_api_route_and_secured_params(self, subgroup):
+    def _get_api_route_flag_and_secured_params(self, subgroup):
         group_content = inspect.getsource(self._module)
         lines = group_content.split('\n')
         command_definitions = {}
@@ -514,6 +351,7 @@ class CommandsDefinitionsExtractor:
                 files_parameters = {}
                 security_parameters_found = False
                 secured_parameters_string = ''
+                flag_parameters = []
                 for line in prepared_lines:
                     if f'@{self._group_name}.command' in line:
                         name = line.split('\'')[1]
@@ -523,6 +361,8 @@ class CommandsDefinitionsExtractor:
                     if '@click.option' in line:
                         response = _get_param_def_from_line(line)
                         param_name = response.get('name')
+                        if response.get('is_flag'):
+                            flag_parameters.append(param_name)
                         convert_content_to_file = response.get('convert_content_to_file')
                         temp_file_extension = response.get('temp_file_extension')
                         if any([convert_content_to_file, temp_file_extension]):
@@ -558,7 +398,8 @@ class CommandsDefinitionsExtractor:
                         'route': route_config,
                         'secure_parameters': secure_parameters,
                         'files_parameters': files_parameters,
-                        'is_command_hidden': is_command_hidden
+                        'is_command_hidden': is_command_hidden,
+                        'flag_parameters': flag_parameters
                     }
                 })
         return command_definitions
@@ -602,7 +443,8 @@ class CommandsDefinitionsExtractor:
                     }
                 }
             })
-        routes_and_secured_params = self._get_api_route_and_secured_params(subgroup)
+        routes_and_secured_params = (
+            self._get_api_route_flag_and_secured_params(subgroup))
         for name, body in definitions.items():
             command_config = routes_and_secured_params.get(name, {})
             files_parameters = command_config.pop('files_parameters', None)
@@ -617,6 +459,13 @@ class CommandsDefinitionsExtractor:
         definitions_copy = copy.deepcopy(definitions)
         for name, body in definitions.items():
             command_config = routes_and_secured_params.get(name, {})
+            flag_parameters = command_config.get('flag_parameters')
+            if flag_parameters:
+                for idx, param in enumerate(body['body']['parameters']):
+                    if param['name'] in flag_parameters:
+                        definitions_copy[name]['body']['parameters'][idx][
+                            'is_flag'] = True
+            definitions_copy[name]['body'].pop('flag_parameters', None)
             is_command_hidden = command_config.pop('is_command_hidden', None)
             if is_command_hidden:
                 definitions_copy.pop(name)

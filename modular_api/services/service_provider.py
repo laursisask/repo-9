@@ -1,52 +1,45 @@
-from modular_api.services.group_service import GroupService
-from modular_api.services.policy_service import PolicyService
-from modular_api.services.usage_service import UsageService
-from modular_api.services.user_service import UserService
-from modular_api.services.audit_service import AuditService
+import os
+from functools import cached_property
+from typing import TYPE_CHECKING
+
+from modular_api.helpers.utilities import SingletonMeta
+
+if TYPE_CHECKING:
+    from modular_api.services.audit_service import AuditService
+    from modular_api.services.environment_service import EnvironmentService
+    from modular_api.services.group_service import GroupService
+    from modular_api.services.policy_service import PolicyService
+    from modular_api.services.usage_service import UsageService
+    from modular_api.services.user_service import UserService
 
 
-class ServiceProvider:
-    class __Services:
-        # services
-        __user_service = None
-        __group_service = None
-        __policy_service = None
-        __audit_service = None
-        __usage_service = None
+class ServiceProvider(metaclass=SingletonMeta):
+    @cached_property
+    def user_service(self) -> 'UserService':
+        from modular_api.services.user_service import UserService
+        return UserService()
 
-        def __str__(self):
-            return id(self)
+    @cached_property
+    def group_service(self) -> 'GroupService':
+        from modular_api.services.group_service import GroupService
+        return GroupService()
 
-        def user_service(self):
-            if not self.__user_service:
-                self.__user_service = UserService()
-            return self.__user_service
+    @cached_property
+    def policy_service(self) -> 'PolicyService':
+        from modular_api.services.policy_service import PolicyService
+        return PolicyService()
 
-        def group_service(self):
-            if not self.__group_service:
-                self.__group_service = GroupService()
-            return self.__group_service
+    @cached_property
+    def audit_service(self) -> 'AuditService':
+        from modular_api.services.audit_service import AuditService
+        return AuditService()
 
-        def policy_service(self):
-            if not self.__policy_service:
-                self.__policy_service = PolicyService()
-            return self.__policy_service
+    @cached_property
+    def usage_service(self) -> 'UsageService':
+        from modular_api.services.usage_service import UsageService
+        return UsageService()
 
-        def audit_service(self):
-            if not self.__audit_service:
-                self.__audit_service = AuditService()
-            return self.__audit_service
-
-        def usage_service(self):
-            if not self.__usage_service:
-                self.__usage_service = UsageService()
-            return self.__usage_service
-
-    instance = None
-
-    def __init__(self):
-        if not ServiceProvider.instance:
-            ServiceProvider.instance = ServiceProvider.__Services()
-
-    def __getattr__(self, item):
-        return getattr(self.instance, item)
+    @cached_property
+    def env(self) -> 'EnvironmentService':
+        from modular_api.services.environment_service import EnvironmentService
+        return EnvironmentService(source=os.environ)

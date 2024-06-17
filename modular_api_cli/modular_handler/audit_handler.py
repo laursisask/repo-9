@@ -4,14 +4,14 @@ from datetime import datetime
 
 import click
 
-from modular_api.helpers.log_helper import get_cli_logger
+from modular_api.helpers.log_helper import get_logger
 from modular_api.services.audit_service import AuditService
 from modular_api.helpers.decorators import CommandResponse
 from modular_api.helpers.exceptions import ModularApiBadRequestException
 from modular_api.helpers.utilities import parse_date
 
 
-_LOG = get_cli_logger('audit_handler')
+_LOG = get_logger(__name__)
 
 
 class AuditHandler:
@@ -20,10 +20,16 @@ class AuditHandler:
         self.audit_service: AuditService = audit_service
 
     def describe_audit_handler(self, group, command, from_date, to_date,
-                               limit, invalid) -> CommandResponse:
+                               limit, invalid, table_response,
+                               json_response) -> CommandResponse:
         """
         Querying audit events by provided filters
         """
+        if table_response and json_response:
+            _LOG.error('Wrong parameters passed')
+            raise ModularApiBadRequestException(
+                'Please specify only one parameter - table or json')
+
         _LOG.info(f'Describing audit events. Parameters: group \'{group}\', '
                   f'command \'{command}\', from_date \'{from_date}\', '
                   f'to_date \'{to_date}\', limit \'{limit}\', '
@@ -74,6 +80,18 @@ class AuditHandler:
                                 f'{linesep}To view only invalid results ' \
                                 f'use \'--invalid\' flag'
             _LOG.warning('Invalid audit events detected')
+
+            if json_response:
+                for item in audit_list:
+                    item["Result"] = ' '.join(item["Result"].split())
+                    for key, value in item.items():
+                        try:
+                            item[key] = json.loads(value)
+                        except:
+                            pass
+                return CommandResponse(
+                    message=json.dumps(audit_list, indent=4)
+                )
             return CommandResponse(
                 table_title=valid_title if not invalid_list else compromised_title,
                 items=audit_list)

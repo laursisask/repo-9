@@ -2,69 +2,74 @@ import importlib.util
 import json
 import os
 import sys
-from functools import lru_cache
+from http import HTTPStatus
+from importlib.metadata import version as lib_version
 from pathlib import Path
-from time import sleep
 from unittest.mock import MagicMock
+from dotenv import load_dotenv
 
-import beaker.middleware
+import bottle
 import click.exceptions
-import pkg_resources
-from bottle import (default_app, run, route, request, BaseRequest,
-                    get, view, post, redirect, hook)
+from bottle import request, Bottle, response
 from ddtrace import tracer
-from swagger_ui import api_doc
+from limits.storage import MongoDBStorage
 
-from modular_api import RequestQueue, StatisticService
-from services.permissions_cache_service import permissions_handler_instance
-from helpers.request_processor import generate_route_meta_mapping
-from helpers.response_processor import process_response
-from commands_generator import (resolve_group_name,
-                                get_file_names_which_contains_admin_commands)
-from helpers.compatibility_check import CompatibilityChecker
-from helpers.exceptions import (ModularApiUnauthorizedException,
-                                ModularApiBadRequestException,
-                                ModularApiConfigurationException)
-from helpers.jwt_auth import encode_data_to_jwt, username_from_jwt_token, \
-    decode_jwt_token
-from helpers.log_helper import get_logger, exception_handler_formatter
-from helpers.params_converter import convert_api_params
-from helpers.response_utils import get_trace_id, build_response
-from helpers.utilities import prepare_request_path, token_from_auth_header
-from helpers.constants import (
-    HTTP_OK, MODULES_PATH, MODULE_NAME_KEY, HTTP_BAD_REQUEST)
-from helpers.constants import MODULAR_API_USERNAME, SWAGGER_ENABLED_KEY, \
-    COMMANDS_BASE_FILE_NAME, API_MODULE_FILE, MOUNT_POINT_KEY
-from swagger.generate_open_api_spec import associate_definition_with_group
-from web_service import META_VERSION_ID
-from web_service.config import Config
-from web_service.response_processor import (build_exception_content,
-                                            validate_request,
-                                            extract_and_convert_parameters,
-                                            get_group_path)
-from web_service.settings import SESSION_SETTINGS, SWAGGER_SETTINGS
+from typing import Callable
+from limits import RateLimitItemPerSecond, RateLimitItem
+from limits.storage import MemoryStorage
+from limits.strategies import MovingWindowRateLimiter, RateLimiter
 from modular_sdk.modular import Modular
 
-_LOG = get_logger('index')
+from modular_api.commands_generator import (
+    resolve_group_name, get_file_names_which_contains_admin_commands
+)
+from modular_api.helpers.compatibility_check import check_version_compatibility
+from modular_api.helpers.constants import (
+    MODULES_PATH, MODULE_NAME_KEY, EVENT_TYPE, META, AUX_DATA,
+    PRODUCT, JOB_ID, STATUS, HTTPMethod, ServiceMode, COMMANDS_BASE_FILE_NAME,
+    MODULAR_API_USERNAME, API_MODULE_FILE, MOUNT_POINT_KEY, SWAGGER_HTML
+)
+from modular_api.helpers.exceptions import (
+    ModularApiUnauthorizedException, ModularApiBadRequestException
+)
+from modular_api.helpers.jwt_auth import (
+    encode_data_to_jwt, username_from_jwt_token, decode_jwt_token
+)
+from modular_api.helpers.log_helper import get_logger
+from modular_api.helpers.params_converter import convert_api_params
+from modular_api.helpers.request_processor import generate_route_meta_mapping
+from modular_api.helpers.response_processor import process_response
+from modular_api.helpers.response_utils import get_trace_id, build_response
+from modular_api.helpers.utilities import token_from_auth_header
+from modular_api.services import SP
+from modular_api.services.environment_service import EnvironmentService
+from modular_api.services.permissions_cache_service import (
+    permissions_handler_instance
+)
+from modular_api.swagger.generate_open_api_spec import generate_definition
+from modular_api.version import __version__
+from modular_api.web_service import META_VERSION_ID
+from modular_api.web_service.config import Config
+from modular_api.web_service.response_processor import (
+    build_exception_content, validate_request, extract_and_convert_parameters,
+    get_group_path
+)
 
-MODULE_GROUP_GROUP_OBJECT_MAPPING = {}
-CONFIG = Config()
-SWAGGER_PATH = CONFIG.swagger_ui_path
-tracer.configure(writer=MagicMock())
+_LOG = get_logger(__name__)
+
+MODULE_GROUP_GROUP_OBJECT_MAPPING = {}  # name to imported module
+CONFIG = Config()  # currently keeps only commands_base.json
+tracer.configure(writer=MagicMock())  # ???
 WEB_SERVICE_PATH = os.path.dirname(__file__)
-
-SWAGGER_ALLOWED_PATH = []
-
 PERMISSION_SERVICE = permissions_handler_instance()
-USAGE_SERVICE = StatisticService()
-REQUEST_QUEUE = RequestQueue()
+USAGE_SERVICE = SP.usage_service
 THREAD_LOCAL_STORAGE = Modular().thread_local_storage_service()
 
 
 def resolve_permissions(tracer, empty_cache=None):
     def decorator(func):
         def wrapper(*a, **ka):
-            sleep(0.35)
+            # sleep(0.35)  # for what?
             user, password = request.auth or (None, None)
             token = None
             if not password:  # not basic auth -> probably bearer
@@ -82,12 +87,9 @@ def resolve_permissions(tracer, empty_cache=None):
                 ka['user_meta'] = user_meta
                 return func(*a, **ka)
             except Exception as e:
+                _LOG.exception('Exception occurred resolving permissions')
                 _trace_id = get_trace_id(tracer=tracer)
-                exception_handler_formatter(
-                    logger=_LOG,
-                    exception=e,
-                    trace_id=_trace_id
-                )
+                # TODO sort out this trace id
                 code, content = build_exception_content(exception=e)
                 error_response = build_response(_trace_id=_trace_id,
                                                 http_code=code,
@@ -99,7 +101,7 @@ def resolve_permissions(tracer, empty_cache=None):
     return decorator
 
 
-def get_module_group_and_associate_object():
+def get_module_group_and_associate_object() -> None:
     modules_path = Path(__file__).parent.resolve() / MODULES_PATH
     global MODULE_GROUP_GROUP_OBJECT_MAPPING
     for module in os.listdir(modules_path):
@@ -126,7 +128,8 @@ def get_module_group_and_associate_object():
                                 group_full_name_list[0] == 'private' or
                                 group_full_name_list == 'private')
 
-            if is_private_group ^ CONFIG.is_private_mode_enabled:
+            # todo what is this
+            if is_private_group ^ SP.env.is_private_mode_enabled():
                 continue
             group_path = get_group_path(mount_point=mount_point,
                                         group_name=group_name)
@@ -137,53 +140,43 @@ def get_module_group_and_associate_object():
             module_spec.loader.exec_module(imported_module)
             MODULE_GROUP_GROUP_OBJECT_MAPPING.update(
                 {group_path: imported_module})
-    return MODULE_GROUP_GROUP_OBJECT_MAPPING
 
 
-def _initialize():
+def initialize() -> None:
+    """
+    Can raise
+    :return:
+    """
     # loading configuration
-    commands_base_path = os.path.join(WEB_SERVICE_PATH,
-                                      COMMANDS_BASE_FILE_NAME)
-    if not os.path.exists(commands_base_path):
-        raise ModularApiConfigurationException(
-            'Can not run server without any installed modules')
-
-    with open(commands_base_path) as file:
-        valid_commands = json.load(file)
-
-    CONFIG.set_available_commands(
-        available_commands=valid_commands)
+    path = Path(__file__).parent / WEB_SERVICE_PATH / COMMANDS_BASE_FILE_NAME
+    if os.path.exists(path):
+        with open(path) as file:
+            commands = json.load(file)
+    else:
+        commands = {}
+    CONFIG.set_available_commands(available_commands=commands)
     _LOG.info('[init] Commands base phase completed')
-
-    host = CONFIG.host
-    port = CONFIG.port
     get_module_group_and_associate_object()
-    return host, port
 
 
-@route('/doc', method='GET')
-@route(f'{CONFIG.prefix}/doc', method='GET')
 @tracer.wrap()
 @resolve_permissions(tracer=tracer)
 def web_help(allowed_commands, user_meta):
     _trace_id = get_trace_id(tracer=tracer)
     return build_response(
         _trace_id=_trace_id,
-        http_code=HTTP_OK,
+        http_code=HTTPStatus.OK,
         content={'available_commands': allowed_commands},
         message="This is the Modular-API administration tool. "
                 "To request support, please contact "
-                "Modular Support Team")
+                "Modular Support Team"
+    )
 
 
-@route('/doc/<path:path>', method='GET')
-@route(f'{CONFIG.prefix}/doc/<path:path>', method='GET')
 @tracer.wrap()
 @resolve_permissions(tracer=tracer)
 def generate_group_or_command_help(path, allowed_commands, user_meta):
     _trace_id = get_trace_id(tracer=tracer)
-    path = prepare_request_path(path=request.path, prefix=CONFIG.prefix). \
-        replace('/doc', '')
 
     route_meta_mapping = generate_route_meta_mapping(
         commands_meta=allowed_commands)
@@ -191,7 +184,7 @@ def generate_group_or_command_help(path, allowed_commands, user_meta):
     requested_command = []
     requested_commands = []
     for itinerary, command_meta in route_meta_mapping.items():
-        if path in itinerary:
+        if path in itinerary:  # todo, bug?
             requested_commands.append(command_meta)
         elif path == itinerary:
             requested_command.append(command_meta)
@@ -204,39 +197,32 @@ def generate_group_or_command_help(path, allowed_commands, user_meta):
 
     return build_response(
         _trace_id=_trace_id,
-        http_code=HTTP_OK,
+        http_code=HTTPStatus.OK,
         content={
             'available_commands': requested_command or requested_commands},
         message="This is the Modular-API administration tool. "
                 "To request support, please contact "
-                "Modular Support Team")
+                "Modular Support Team"
+    )
 
 
 def __validate_cli_version(_trace_id):
-    version_warning = None
-    error_response = None
     try:
-        version_warning = CompatibilityChecker().check_compatibility(
-            request=request,
-            allowed_version=CONFIG.minimal_allowed_cli_version
+        version_warnings = check_version_compatibility(
+            min_allowed_version=SP.env.min_cli_version(),
+            current_version=request.headers.get('Cli-Version')
         )
-        return version_warning, error_response
+        return version_warnings, None
     except ModularApiBadRequestException as e:
-        exception_handler_formatter(
-            logger=_LOG,
-            exception=e,
-            trace_id=_trace_id
-        )
+        _LOG.warning('Version compatibility checker failed', exc_info=True)
 
         code, content = build_exception_content(exception=e)
         error_response = build_response(_trace_id=_trace_id,
                                         http_code=code,
                                         content=content)
-        return version_warning, error_response
+        return None, error_response
 
 
-@route('/login', method=['GET'])
-@route(f'{CONFIG.prefix}/login', method=['GET'])
 @tracer.wrap()
 @resolve_permissions(tracer=tracer, empty_cache=True)
 def login(allowed_commands, user_meta):
@@ -257,69 +243,60 @@ def login(allowed_commands, user_meta):
     jwt_token = encode_data_to_jwt(username=username)
     data = {
         'jwt': jwt_token,
-        'version': __resolve_version()
+        'version': __version__
     }
     if meta_return:
-        data['meta'] = add_versions_to_allowed_modules(
-            allowed_commands=allowed_commands)
+        add_versions_to_allowed_modules(allowed_commands)
+        data['meta'] = allowed_commands
     if version_warning:
         data['warnings'] = version_warning
 
-    return build_response(_trace_id=_trace_id, http_code=HTTP_OK, content=data)
+    return build_response(_trace_id=_trace_id, http_code=HTTPStatus.OK,
+                          content=data)
 
 
-@lru_cache()
-def __resolve_version():
-    from version import modular_api_version as version
-    return version
-
-
-def add_versions_to_allowed_modules(allowed_commands: dict):
+def add_versions_to_allowed_modules(allowed_commands: dict) -> None:
+    """
+    Changes the given dict in place
+    :param allowed_commands:
+    :return: None
+    """
     # todo refactor with resolve_user_available_components_version ASAP
-    modules_path = Path(MODULES_PATH)
-    for module in modules_path.iterdir():
+
+    for module in (Path(__file__).parent / MODULES_PATH).iterdir():
         api_file_path = module / API_MODULE_FILE
         if not module.is_dir() or not api_file_path.exists():
             continue
-        with open(str(api_file_path), 'r') as file:
+        with open(api_file_path, 'r') as file:
             module_descriptor = json.load(file)
 
         mount_point = module_descriptor[MOUNT_POINT_KEY]
-        if mount_point in allowed_commands.keys():
-            allowed_commands[mount_point]['version'] = pkg_resources. \
-                get_distribution(
-                module_descriptor[MODULE_NAME_KEY]
-            ).version
-    return allowed_commands
+        if mount_point in allowed_commands:
+            allowed_commands[mount_point]['version'] = lib_version(
+                module_descriptor[MODULE_NAME_KEY])
 
 
 def resolve_user_available_components_version(allowed_commands: dict):
-    modules_path = Path(__file__).parent / 'modules'
+    modules_path = Path(__file__).parent / MODULES_PATH
     components_versions = {}
     for module in modules_path.iterdir():
         api_file_path = module / API_MODULE_FILE
         if not module.is_dir() or not api_file_path.exists():
             continue
-        with open(str(api_file_path), 'r') as file:
+        with open(api_file_path, 'r') as file:
             module_descriptor = json.load(file)
-        if module_descriptor[MOUNT_POINT_KEY] in allowed_commands.keys():
+        if module_descriptor[MOUNT_POINT_KEY] in allowed_commands:
             module_name = module_descriptor[MODULE_NAME_KEY]
-            components_versions[module_name] = pkg_resources.get_distribution(
-                module_name
-            ).version
+            components_versions[module_name] = lib_version(module_name)
     return components_versions
 
 
-@route('/version', method=['GET'])
-@route(f'{CONFIG.prefix}/version', method=['GET'])
 @tracer.wrap()
 @resolve_permissions(tracer=tracer, empty_cache=False)
 def version(allowed_commands, user_meta):
     _trace_id = get_trace_id(tracer=tracer)
     resolve_user_available_components_version(allowed_commands)
-    data = {
-        'modular_api': __resolve_version(),
-    }
+    data = {'modular_api': __version__}
     components_version = resolve_user_available_components_version(
         allowed_commands
     )
@@ -333,43 +310,42 @@ def version(allowed_commands, user_meta):
     }
     return build_response(
         _trace_id=_trace_id,
-        http_code=HTTP_OK,
+        http_code=HTTPStatus.OK,
         content=response_template
     )
 
 
-@route('/health_check', method=['GET'])
-@route(f'{CONFIG.prefix}/health_check', method=['GET'])
 @tracer.wrap()
-def version():
+def health_check():
     _trace_id = get_trace_id(tracer=tracer)
     return build_response(
         _trace_id=_trace_id,
-        http_code=HTTP_OK,
+        http_code=HTTPStatus.OK,
         content=None
     )
 
 
-@route('/stats', method=['POST'])
-@route(f'{CONFIG.prefix}/stats', method=['POST'])
 @tracer.wrap()
 @resolve_permissions(tracer=tracer, empty_cache=True)
 def stats(allowed_commands, user_meta):
     _trace_id = get_trace_id(tracer=tracer)
     entry_request = request
-    required_params = ['EventType', 'Product', 'JobId', 'Status', 'Meta']
+    required_params = [EVENT_TYPE, PRODUCT, JOB_ID, STATUS, META]
 
     absent_params = [param for param in required_params
                      if not entry_request.json.get(param)]
     if absent_params:
-        return build_response(_trace_id=_trace_id, http_code=HTTP_BAD_REQUEST,
-                              content=None)
+        return build_response(
+            _trace_id=_trace_id,
+            http_code=HTTPStatus.BAD_REQUEST,
+            content=None
+        )
 
     payload = {param: entry_request.json.get(param)
                for param in required_params}
 
     USAGE_SERVICE.save_stats(request=entry_request, payload=payload)
-    return build_response(_trace_id=_trace_id, http_code=HTTP_OK, content=None)
+    return build_response(_trace_id=_trace_id, content=None)
 
 
 def __automated_relogin(request_item) -> bool:
@@ -382,31 +358,34 @@ def __automated_relogin(request_item) -> bool:
     return True
 
 
-@route('/<group>/<command>', method=['POST', 'GET'])
-@route('/<mount_point>/<group>/<command>', method=['POST', 'GET'])
-@route('/<mount_point>/<group>/<subgroup>/<command>', method=['POST', 'GET'])
-@route('/<mount_point>/<parent_group>/<group>/<subgroup>/<command>',
-       method=['POST', 'GET'])
-@route(f'{CONFIG.prefix}/<group>/<command>',
-       method=['POST', 'GET'])
-@route(f'{CONFIG.prefix}/<mount_point>/<group>/<command>',
-       method=['POST', 'GET'])
-@route(f'{CONFIG.prefix}/<mount_point>/<group>/<subgroup>/<command>',
-       method=['POST', 'GET'])
-@route(
-    f'{CONFIG.prefix}/<mount_point>/<parent_group>/<group>/<subgroup>/<command>',
-    method=['POST', 'GET'])
+def swagger_html():
+    response.content_type = 'text/html'
+    return SWAGGER_HTML.format(
+        version='latest',
+        url=request.app.get_url('swagger-spec')
+    )
+
+
+def swagger_spec():
+    route_meta_mapping = generate_route_meta_mapping(
+        commands_meta=CONFIG.available_commands
+    )
+    response.content_type = 'application/json'
+    return generate_definition(
+        commands_def=route_meta_mapping,
+        prefix=request.fullpath[:-len(request.path)]  # todo, maybe won't work in some sophisticated situations but for our case ok
+    )
+
+
 @tracer.wrap()
 @resolve_permissions(tracer=tracer)
-def index(mount_point=None, group=None, command=None, parent_group=None,
-          subgroup=None, allowed_commands=None, user_meta=None):
+def index(path: str, allowed_commands=None, user_meta=None):
     _trace_id = get_trace_id(tracer=tracer)
-    REQUEST_QUEUE.put(request)
     temp_files_list = []
     try:
-        request_item = REQUEST_QUEUE.get()
-        relogin_needed = __automated_relogin(request_item)
-        auth_type = request_item.headers.get('authorization')
+        # TODO sort out relogin and remove
+        relogin_needed = __automated_relogin(request)
+        auth_type = request.headers.get('authorization')
         if auth_type and auth_type.startswith('Basic'):
             relogin_needed = False
         if relogin_needed:
@@ -422,9 +401,7 @@ def index(mount_point=None, group=None, command=None, parent_group=None,
         if error_response:
             return error_response
 
-        path = prepare_request_path(path=request_item.path,
-                                    prefix=CONFIG.prefix)
-        method = request_item.method
+        method = request.method
 
         route_meta_mapping = generate_route_meta_mapping(
             commands_meta=allowed_commands)
@@ -434,8 +411,9 @@ def index(mount_point=None, group=None, command=None, parent_group=None,
             raise ModularApiBadRequestException('Can not found requested '
                                                 'command')
         request_body_raw = extract_and_convert_parameters(
-            request=request_item,
-            command_def=command_def)
+            request=request,
+            command_def=command_def
+        )
 
         request_body_raw = validate_request(command=command_def,
                                             req_params=request_body_raw,
@@ -450,8 +428,7 @@ def index(mount_point=None, group=None, command=None, parent_group=None,
                 secure_parameters=secure_parameters
             )
         _LOG.info('Request data: \npath={}\n'
-                  'method={}\nbody:\n{}'.format(path, method,
-                                                body_to_log))
+                  'method={}\nbody:\n{}'.format(path, method, body_to_log))
 
         command_handler_name = command_def.get('handler')
         group_name = command_def.get('parent')
@@ -465,10 +442,22 @@ def index(mount_point=None, group=None, command=None, parent_group=None,
         # todo get username from user_meta of somewhere else, but
         #  not from header again.
         username = username_from_jwt_token(
-            token_from_auth_header(request_item.headers.get('Authorization'))
+            token_from_auth_header(request.headers.get('Authorization'))
         )
+        if not username:
+            username, _ = request.auth
         # saving username to thread-local storage
         THREAD_LOCAL_STORAGE.set('modular_user', username)
+        curr_user = SP.user_service.describe_user(username)
+        # saving the meta.aux_data of user in the thread-local storage
+        modular_user_meta_aux = {}
+        if curr_user.meta:
+            meta_dict = curr_user.meta.as_dict()
+            aux_data = meta_dict.get(AUX_DATA)
+            modular_user_meta_aux = (
+                aux_data if isinstance(aux_data, dict) else {}
+            )
+        THREAD_LOCAL_STORAGE.set('modular_user_meta_aux', modular_user_meta_aux)
 
         # hopefully, token will be here... otherwise 500, I mean, it must be
         # here because the endpoint is authorized by token
@@ -490,7 +479,8 @@ def index(mount_point=None, group=None, command=None, parent_group=None,
         response = json.loads(response)
         _LOG.info(f'Obtained response {response} for {_trace_id} request')
         content, code = process_response(response=response)
-        USAGE_SERVICE.save_stats(request=request_item, payload=response)
+        payload = {key.lower(): value for key, value in response.items()}
+        USAGE_SERVICE.save_stats(request=request, payload=payload)  # TODO raises Value error sometimes
         if content.get('warnings'):
             if version_warning:
                 content['warnings'].extend(version_warning)
@@ -501,90 +491,171 @@ def index(mount_point=None, group=None, command=None, parent_group=None,
                               content=content)
 
     except Exception as e:
-        exception_handler_formatter(
-            logger=_LOG,
-            exception=e,
-            trace_id=_trace_id
-        )
+        # TODO use _LOG.exception
+        _LOG.exception('Unexpected exception occurred')
         code, content = build_exception_content(exception=e)
         error_response = build_response(_trace_id=_trace_id,
                                         http_code=code,
                                         content=content)
-        USAGE_SERVICE.save_stats(request=request_item, payload=content)
+        USAGE_SERVICE.save_stats(request=request, payload=content)
         return error_response
-    finally:
+    finally:  # todo what temp files?, for what? since they are temp files, why should we remove them?
         if temp_files_list:
             for each_file in temp_files_list:
                 os.remove(each_file)
 
 
-def swagger_login(swagger_path):
-    @get(swagger_path)
-    @view('login_swagger')
-    @tracer.wrap()
-    def swagger_login_get():
-        return {'swagger_path': swagger_path}
+class RateLimitMiddleware:
+    __slots__ = 'app', 'limiter', 'limit'
+
+    def __init__(self, app: Callable, limiter: RateLimiter,
+                 limit: RateLimitItem):
+        self.app = app
+        self.limiter = limiter
+        self.limit = limit
+
+    def __call__(self, environ, start_response):
+        if not self.limiter.hit(self.limit, environ.get('REMOTE_ADDR')):
+            _LOG.debug('Requests limit hit. Returning 429')
+            c = HTTPStatus.TOO_MANY_REQUESTS
+            start_response(
+                f'{c.value} {c.phrase}', [('Content-Type', 'text/plain')],
+            )
+            return [HTTPStatus.TOO_MANY_REQUESTS.description.encode()]
+        return self.app(environ, start_response)
 
 
-def swagger_auth(swagger_path):
-    @post(swagger_path)
-    @tracer.wrap()
-    def swagger_auth_post():
-        username = request.forms.get('username')
-        password = request.forms.get('password')
-        try:
-            allowed_commands, user_meta = PERMISSION_SERVICE.authenticate_user(
-                username=username,
-                password=password,
-                empty_cache=True)
-            group_swagger_link, output_file = associate_definition_with_group(
-                username=username,
-                swagger_path=swagger_path,
-                available_commands=allowed_commands,
-                prefix=CONFIG.prefix)
+class WSGIApplicationBuilder:
+    def __init__(self, env: EnvironmentService, prefix: str = '',
+                 swagger: bool = False, swagger_prefix: str = '/swagger'):
+        self._env = env
+        self._prefix = prefix
+        self._swagger = swagger
+        self._swagger_prefix = swagger_prefix
 
-            api_doc(app,
-                    config_path=output_file,
-                    url_prefix=group_swagger_link,
-                    title='Modular-API docs',
-                    parameters=SWAGGER_SETTINGS)
-            request.session[SWAGGER_ENABLED_KEY] = True
-            SWAGGER_ALLOWED_PATH.append(group_swagger_link)
-            return redirect(group_swagger_link)
-        except ModularApiUnauthorizedException:
-            return redirect('/swagger')
+    @staticmethod
+    def _build_generic_error_handler(code: HTTPStatus) -> Callable:
+        """
+        Builds a generic callback that handles a specific error code
+        :param code:
+        :return:
+        """
+        def f(error):
+            return json.dumps({'message': code.phrase}, separators=(',', ':'))
+        return f
+
+    def _register_errors(self, application: Bottle) -> None:
+        to_handle = (HTTPStatus.NOT_FOUND, HTTPStatus.INTERNAL_SERVER_ERROR)
+        for code in to_handle:
+            application.error_handler[code.value] = self._build_generic_error_handler(code)
+
+    def _rate_limited(self, app: Callable) -> Callable:
+        match self._env.mode():
+            case ServiceMode.SAAS:
+                storage = MemoryStorage()
+                # todo fix for saas, either implement storage for dynamodb
+                #  or move completely to mongo, or use redis just for broker
+                #  or use nginx and set rate limiting there.
+                #  This MemoryStorage performs far from perfect when multiple
+                #  processes and should not be used
+            case _:
+                storage = MongoDBStorage(
+                    uri=self._env.mongo_uri(),
+                    database_name=self._env.mongo_rate_limits_database()
+                )
+        return RateLimitMiddleware(
+            app=app,
+            limiter=MovingWindowRateLimiter(storage),
+            limit=RateLimitItemPerSecond(self._env.api_calls_per_second_limit())
+        )
+
+    def build(self) -> Callable:
+        """
+        It returns a wsgi callable, not a Bottle instance
+        :return:
+        """
+        _LOG.info('Building WSGI application')
+        child = Bottle()
+        self._register_errors(child)
+        if self._swagger:
+            child.route(
+                path='/swagger.json',
+                method=HTTPMethod.GET,
+                callback=swagger_spec,
+                name='swagger-spec'
+            )
+            child.route(
+                path=self._swagger_prefix,
+                method=HTTPMethod.GET,
+                callback=swagger_html
+            )
+
+        child.route(
+            path='/doc',
+            method=HTTPMethod.GET,
+            callback=web_help
+        )
+        child.route(
+            path='/doc<path:path>',
+            method=HTTPMethod.GET,
+            callback=generate_group_or_command_help
+        )
+        child.route(
+            path='/login',
+            method=HTTPMethod.GET,
+            callback=login
+        )
+        child.route(
+            path='/version',
+            method=HTTPMethod.GET,
+            callback=version
+        )
+        child.route(
+            path='/health_check',
+            method=HTTPMethod.GET,
+            callback=health_check
+        )
+
+        child.route(
+            path='/stats',
+            method=HTTPMethod.POST,
+            callback=stats
+        )
+        # TODO use some prefix for all commands, because this catches
+        #  everything
+        child.route(
+            path='<path:path>',
+            method=[HTTPMethod.POST, HTTPMethod.GET],
+            callback=index
+        )
+
+        if self._prefix:
+            application = Bottle()
+            self._register_errors(application)
+            pr = f'/{self._prefix.strip("/")}/'
+            application.mount(pr, child)
+        else:
+            application = child
+
+        application = self._rate_limited(application)
+        _LOG.info('WSGI application was built')
+        return application
 
 
-def secure_swagger_path(swagger_path):
-    @hook('before_request')
-    @tracer.wrap()
-    def setup_request():
-        request.session = request.environ['beaker.session']
-        if request.path in SWAGGER_ALLOWED_PATH and not request.session.get(
-                SWAGGER_ENABLED_KEY):
-            redirect(swagger_path)
+def main():
+    load_dotenv(verbose=True)
+    sys.stderr.write(
+        '[WARNING] This way to start the server is deprecated and '
+        'will be removed. Please, use "modular run" command instead\n'
+    )
+    # warnings.warn(DeprecationWarning(
+    #     'This way to start the server is deprecated and '
+    #     'will be removed. Please, use "modular run" command instead'
+    # ))
+    initialize()  # can raise
+    application = WSGIApplicationBuilder(SP.env).build()
+    bottle.run(application, host='127.0.0.1', port=8085)
 
 
 if __name__ == "__main__":
-    app = default_app()
-    try:
-        host, port = _initialize()
-
-        BaseRequest.MEMFILE_MAX = 5 * 1024 * 1024  # allow processing content
-        # less than 5MB
-
-        app_middleware = beaker.middleware.SessionMiddleware(app,
-                                                             SESSION_SETTINGS)
-        if CONFIG.swagger_ui_is_enabled:
-            SWAGGER_PATH = CONFIG.prefix + SWAGGER_PATH
-            swagger_login(swagger_path=SWAGGER_PATH)
-            swagger_auth(swagger_path=SWAGGER_PATH)
-            secure_swagger_path(swagger_path=SWAGGER_PATH)
-        run(app_middleware, host=host, port=port)
-    except Exception as e:
-        exception_handler_formatter(
-            logger=_LOG,
-            exception=e,
-            trace_id=None
-        )
-        raise ModularApiConfigurationException(e)
+    main()

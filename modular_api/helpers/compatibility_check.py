@@ -1,49 +1,39 @@
 from distutils.version import LooseVersion
-from helpers.log_helper import get_logger
 
-from helpers.exceptions import ModularApiBadRequestException
+from modular_api.helpers.exceptions import ModularApiBadRequestException
+from modular_api.helpers.log_helper import get_logger
 
 _LOG = get_logger(__name__)
 
 
-class CompatibilityChecker:
-    @staticmethod
-    def _resolve_received_version(cli_version):
-        invalid_version_passed = 'Invalid version format passed. ' \
-                                 'Expected the following: 3.67.1'
-        try:
-            major, minor, *_ = LooseVersion(cli_version).version
-        except:
-            _LOG.error(invalid_version_passed)
-            raise ModularApiBadRequestException(invalid_version_passed)
-        if not list(filter(lambda x: str(x).isdigit(), (major, minor))):
-            _LOG.error(invalid_version_passed)
-            raise ModularApiBadRequestException(invalid_version_passed)
-        return major, minor
-
-    def check_compatibility(self, request, allowed_version):
-        warnings = []
-        cli_version = request.headers.get('Cli-Version')
-        if not cli_version:
-            return
-        major_allowed_version, minor_allowed_version = LooseVersion(
-            allowed_version).version
-        major_received_version, minor_received_version = \
-            self._resolve_received_version(cli_version=cli_version)
-        if major_allowed_version > major_received_version:
-            major_version_error = \
-                f'CLI Major version {major_received_version} is lower than ' \
-                f'minimal allowed {major_allowed_version}. Please, update ' \
-                f'the Modular CLI to version greater than or equal to ' \
-                f'{allowed_version}'
-            _LOG.error(major_version_error)
-            raise ModularApiBadRequestException(major_version_error)
-        elif minor_allowed_version > minor_received_version:
-            minor_version_error = \
-                f'CLI Minor version {minor_received_version} is lower than ' \
-                f'the minimal required API version {minor_allowed_version}. ' \
-                f'Some features may not work. Consider updating the Modular ' \
-                f'CLI to version greater than or equal to {allowed_version}'
-            _LOG.error(minor_version_error)
-            warnings.append(minor_version_error)
-        return warnings
+def check_version_compatibility(min_allowed_version: str,
+                                current_version: str | None
+                                ) -> list[str]:
+    """
+    Car raise in case version is incompatible
+    :param min_allowed_version: from envs
+    :param current_version: from cli
+    :return: a list of warnings
+    """
+    if not current_version:
+        _LOG.warning('modular cli did not send its version')
+        return []
+    m = LooseVersion(min_allowed_version)
+    c = LooseVersion(current_version)
+    if c.version[0] < m.version[0]:  # Major
+        err = \
+            f'CLI Major version {current_version} is lower than ' \
+            f'minimal allowed {min_allowed_version}. Please, update ' \
+            f'the Modular CLI to version greater than or equal to ' \
+            f'{min_allowed_version}'
+        _LOG.error(err)
+        raise ModularApiBadRequestException(err)
+    elif c.version[0] == m.version[0] and c.version[1] < m.version[1]:
+        warn = \
+            f'CLI Minor version {current_version} is lower than ' \
+            f'the minimal required API version {min_allowed_version}. ' \
+            f'Some features may not work. Consider updating the Modular ' \
+            f'CLI to version greater than or equal to {min_allowed_version}'
+        _LOG.warning(warn)
+        return [warn]
+    return []

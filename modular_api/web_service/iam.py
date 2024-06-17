@@ -7,7 +7,7 @@ from modular_api.helpers.log_helper import get_logger
 ALLOW = 'Allow'
 DENY = 'Deny'
 
-_LOG = get_logger('iam_service')
+_LOG = get_logger(__name__)
 
 
 def policy_sort(policy_list: list) -> dict:

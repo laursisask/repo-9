@@ -1,7 +1,5 @@
-from abc import ABC
 
-
-class ModularApiBaseException(ABC, Exception):
+class ModularApiBaseException(Exception):
     """
     Base exception
     """
@@ -97,18 +95,3 @@ class ModularApiGatewayTimeoutException(ModularApiBaseException):
     of the command execution.
     """
     code = 504
-
-
-HTTP_CODE_EXCEPTION_MAPPING = {
-    400: ModularApiBadRequestException,
-    401: ModularApiUnauthorizedException,
-    403: ModularApiForbiddenException,
-    404: ModularApiNotFoundException,
-    408: ModularApiTimeoutException,
-    409: ModularApiConflictException,
-    426: ModularApiReloginException,
-    500: ModularApiInternalException,
-    502: ModularApiBadGatewayException,
-    503: ModularApiServiceTemporaryUnavailableException,
-    504: ModularApiGatewayTimeoutException
-}

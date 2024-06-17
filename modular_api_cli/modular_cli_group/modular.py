@@ -1,37 +1,93 @@
+import multiprocessing
+
+import bottle
 import click
-from pkg_resources import get_distribution
-from modular_api_cli.modular_cli_group.user import user, user_handler_instance
-from modular_api_cli.modular_cli_group.group import group
-from modular_api_cli.modular_cli_group.policy import policy
-from modular_api_cli.modular_handler.audit_handler import AuditHandler
-from modular_api.services import SERVICE_PROVIDER
-from modular_api.services.install_service import install_module, uninstall_module, \
-    check_and_describe_modules
+
 from modular_api.helpers.decorators import BaseCommand, ResponseDecorator
 from modular_api.helpers.exceptions import ModularApiBadRequestException
-from modular_api.helpers.log_helper import get_logger
+from modular_api.helpers.log_helper import init_console_handler, get_logger
+from modular_api.index import WSGIApplicationBuilder, initialize
+from modular_api.services import SERVICE_PROVIDER
+from modular_api.services import SP
+from modular_api.services.install_service import (
+    check_and_describe_modules,
+    install_module,
+    uninstall_module,
+)
+from modular_api.version import __version__
+from modular_api_cli.modular_cli_group.group import group
+from modular_api_cli.modular_cli_group.policy import policy
+from modular_api_cli.modular_cli_group.user import user, user_handler_instance
+from modular_api_cli.modular_handler.audit_handler import AuditHandler
 from modular_api_cli.modular_handler.usage_handler import UsageHandler
 
-_LOG = get_logger('modular_api')
+_LOG = get_logger(__name__)
+
+DEFAULT_NUMBER_OF_WORKERS = (multiprocessing.cpu_count() * 2) + 1
 
 
 def audit_handler_instance():
-    audit_service = SERVICE_PROVIDER.audit_service()
-    return AuditHandler(audit_service=audit_service)
+    return AuditHandler(audit_service=SERVICE_PROVIDER.audit_service)
 
 
 def stats_handler_instance():
-    usage_service = SERVICE_PROVIDER.usage_service()
-    return UsageHandler(usage_service=usage_service)
+    return UsageHandler(usage_service=SERVICE_PROVIDER.usage_service)
 
 
 @click.group()
-@click.version_option(get_distribution('modular').version, '-v', '--version')
+@click.version_option(__version__, '-v', '--version')
 def modular():
     """
     Configuration settings for modular-api
     """
-    pass
+
+
+@modular.command(name='run')
+@click.option('--host', '-h', default='0.0.0.0', required=False, type=str,
+              help='Host to start the server', show_default=True)
+@click.option('--port', '-p', default=8085, type=int, required=False,
+              help='Host to start the server', show_default=True)
+@click.option('--prefix', '-pr', type=str, required=False, default='',
+              help='Global api prefix. By default there is no prefix')
+@click.option('--gunicorn', '-g', is_flag=True,
+              help='Whether to run the server using gunicorn')
+@click.option('--workers', '-nw', required=False, type=int,
+              default=DEFAULT_NUMBER_OF_WORKERS, show_default=True,
+              help='Number of gunicorn workers. Has effect only if '
+                   '--gunicorn flag is set')
+@click.option('--worker_timeout', '-wt', default=0, type=int,
+              help='Gunicorn worker timeout in seconds. '
+                   'By default there is no timeout')
+@click.option('--swagger', is_flag=True, help='Whether to server swagger')
+@click.option('--swagger_prefix', type=str, default='/swagger',
+              help='Swagger path prefix', show_default=True)
+def run(host: str, port: int, prefix: str, gunicorn: bool, workers: int,
+        worker_timeout: int, swagger: bool, swagger_prefix: str):
+    """
+    Starts modular server
+    """
+    init_console_handler()
+    initialize()
+    application = WSGIApplicationBuilder(
+        env=SP.env,
+        prefix=prefix,
+        swagger=swagger,
+        swagger_prefix=swagger_prefix
+    ).build()
+
+    if gunicorn:
+        from modular_api.web_service.app_gunicorn import \
+            ModularAdminGunicornApplication
+        options = {
+            'bind': f'{host}:{port}',
+            'workers': workers,
+            'timeout': worker_timeout,
+            'max_requests': 50,  # to limit the damage of memory leaks
+            'max_requests_jitter': 20
+        }
+        ModularAdminGunicornApplication(application, options).run()
+    else:
+        bottle.run(application, host=host, port=port)
 
 
 @modular.command(cls=BaseCommand)
@@ -73,13 +129,13 @@ def describe(ctx, json):
 
 
 @modular.command(cls=BaseCommand, name='get_stats')
-@click.option('--from_date', '-fd', type=str,
-              help='Filter by date from which records are displayed. '
-                   'Format yyyy-mm-dd. If not specified - first day of current '
-                   'month will be used')
-@click.option('--to_date', '-td', type=str,
-              help='Filter by date until which records are displayed. '
-                   'Format yyyy-mm-dd. If not specified - current date will be '
+@click.option('--from_month', '-fm', type=str,
+              help='Filter by month from which records are displayed. '
+                   'Format "yyyy-mm". If not specified - current month will '
+                   'be used')
+@click.option('--to_month', '-tm', type=str,
+              help='Filter by month until which records are displayed. '
+                   'Format yyyy-mm. If not specified - next month will be '
                    'used')
 @click.option('--display_table', '-D', is_flag=True,
               help='Flag to show report in terminal. If not specified - report '
@@ -88,12 +144,12 @@ def describe(ctx, json):
               help='Directory path to saving report file. If not specified - '
                    'report will be saved in user home directory')
 @ResponseDecorator(click.echo, 'Can not get statistic')
-def get_stats(from_date, to_date, display_table, path):
+def get_stats(from_month, to_month, display_table, path):
     """
     Saves usage statistic to a file
     """
     return stats_handler_instance().get_stats_handler(
-        from_date=from_date, to_date=to_date, display_table=display_table,
+        from_month=from_month, to_month=to_month, display_table=display_table,
         path=path)
 
 
@@ -117,14 +173,21 @@ def get_stats(from_date, to_date, display_table, path):
                    'Will have no effect if "--group" not specified')
 @click.option('--invalid', '-I', is_flag=True,
               help='Flag to show only invalid audit events.')
+@click.option('--json', is_flag=True,
+              help='Show response as JSON. Can not be used with --table '
+                   'parameter')
+@click.pass_context
 @ResponseDecorator(click.echo, 'Can not describe audit')
-def audit(group, command, from_date, to_date, limit, invalid):
+def audit(ctx, group, command, from_date, to_date, limit, invalid, json):
     """
     Describes audit
     """
+
+    table = ctx.params.get('table', False)
+
     return audit_handler_instance().describe_audit_handler(
         group=group, command=command, from_date=from_date, to_date=to_date,
-        limit=limit, invalid=invalid)
+        limit=limit, invalid=invalid, table_response=table, json_response=json)
 
 
 @modular.command(cls=BaseCommand, name='policy_simulator')

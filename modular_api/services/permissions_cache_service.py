@@ -1,21 +1,23 @@
 import json
 import os
+from pathlib import Path
 
-from modular_api.helpers.constants import ACTIVATED_STATE
-from modular_api.web_service.iam import filter_commands_by_permissions
-from modular_api.services import SERVICE_PROVIDER
-from modular_api.helpers.password_util import secure_string
-from modular_api.helpers.exceptions import ModularApiConfigurationException, \
-    ModularApiUnauthorizedException
+from modular_api.models.user_model import User
+from modular_api.helpers.constants import ACTIVATED_STATE, ALLOWED_VALUES
+from modular_api.helpers.exceptions import (
+    ModularApiUnauthorizedException, ModularApiBadRequestException,
+)
 from modular_api.helpers.jwt_auth import decode_jwt_token
 from modular_api.helpers.log_helper import get_logger
-
-from modular_api.web_service import WEB_SERVICE_PATH, COMMANDS_BASE_FILE_NAME
+from modular_api.helpers.password_util import secure_string
+from modular_api.services import SERVICE_PROVIDER
 from modular_api.services.group_service import GroupService
 from modular_api.services.policy_service import PolicyService
 from modular_api.services.user_service import UserService
+from modular_api.web_service import WEB_SERVICE_PATH, COMMANDS_BASE_FILE_NAME
+from modular_api.web_service.iam import filter_commands_by_permissions
 
-_LOG = get_logger('permissions_service')
+_LOG = get_logger(__name__)
 
 
 class PermissionsService:
@@ -28,15 +30,15 @@ class PermissionsService:
         self.policy_service: PolicyService = policy_service
 
     @staticmethod
-    def get_available_commands():
-        commands_base_path = os.path.join(WEB_SERVICE_PATH,
-                                          COMMANDS_BASE_FILE_NAME)
+    def get_available_commands() -> dict:
+        commands_base_path = Path(__file__).parent.parent / WEB_SERVICE_PATH / COMMANDS_BASE_FILE_NAME
         _LOG.info(f'Getting available commands from {commands_base_path}')
         if not os.path.isfile(commands_base_path):
-            unable__to_run_server_message = 'Can not run server without any ' \
-                                            'installed modules'
-            _LOG.error(unable__to_run_server_message)
-            raise ModularApiConfigurationException(unable__to_run_server_message)
+            return {}
+            # unable__to_run_server_message = 'Can not run server without any ' \
+            #                                 'installed modules'
+            # _LOG.error(unable__to_run_server_message)
+            # raise ModularApiConfigurationException(unable__to_run_server_message)
 
         with open(commands_base_path) as file:
             available_commands = json.load(file)
@@ -106,7 +108,7 @@ class PermissionsService:
                     'Provided credentials are invalid or the access was '
                     'revoked, please contact service administrator')
 
-            for policy_content in policy_item.policy_content:
+            for policy_content in policy_item.content:
                 group_policy.append(policy_content)
 
         self.group_allowed_commands_mapping[group_item.group_name] = \
@@ -114,7 +116,10 @@ class PermissionsService:
 
         return self.group_allowed_commands_mapping[group_item.group_name]
 
-    def get_user_item_or_raise_error(self, username):
+    def get_user_item_or_raise_error(self, username: str) -> User:
+        if not username:
+            _LOG.info('Username is empty')
+            raise ModularApiBadRequestException('Username is empty')
         _LOG.info(f'Going to get user item by {username} username')
         user_item = self.user_service.describe_user(username=username)
         if not user_item:
@@ -125,8 +130,10 @@ class PermissionsService:
     def check_user_item_is_valid(self, user_item):
         _LOG.info(f'Going to check if {user_item.username} user able to '
                   f'perform commands')
-        if self.user_service.calculate_user_hash(
-                user_item=user_item) != user_item.hash:
+        calculated_hash = self.user_service.calculate_user_hash(
+            user_item=user_item
+        )
+        if calculated_hash != user_item.hash:
             _LOG.error(f'{user_item.username} user item compromised')
             raise ModularApiUnauthorizedException(
                 'Provided credentials are invalid or the access was '
@@ -137,12 +144,17 @@ class PermissionsService:
                 'Provided credentials are invalid or the access was '
                 'revoked, please contact service administrator')
 
-    def authenticate_user(self, username, password=None, token=None,
-                          empty_cache=None):
+    def authenticate_user(
+            self,
+            username: str,
+            password: str | None = None,
+            token: str | None = None,
+            empty_cache: bool | None = None,
+    ) -> tuple:
         if not any([password, token]):
-            raise ModularApiUnauthorizedException('Credentials was not '
-                                                 'provided')
-
+            raise ModularApiUnauthorizedException(
+                'Password or token was not provided'
+            )
         if token:
             username = self.validate_jwt_and_get_user(token=token)
             if not username:
@@ -157,25 +169,29 @@ class PermissionsService:
             is_password_valid = self.validate_password(
                 username=username,
                 user_password=user_item.password,
-                provided_password=password)
+                provided_password=password,
+            )
             if not is_password_valid:
-                _LOG.info(f'[auth] Invalid password: {username}. '
-                          f'Access denied')
+                _LOG.info(
+                    f'[auth] Invalid password: {username}. Access denied'
+                )
                 raise ModularApiUnauthorizedException('Access denied')
 
         available_commands = self.resolve_available_commands(
             group_names=user_item.groups,
             empty_cache=empty_cache
         )
-        user_meta = user_item.meta.as_dict() if user_item.meta else {}
+        user_meta = (
+            user_item.meta.as_dict().get(ALLOWED_VALUES, {})
+        ) if user_item.meta else {}
         return available_commands, user_meta
 
     @staticmethod
-    def validate_jwt_and_get_user(token):
+    def validate_jwt_and_get_user(token: str) -> str | None:
         payload = decode_jwt_token(token)
         if not payload:
             _LOG.info('[auth] User is NOT authenticated with JWT')
-            return False
+            return
         username = payload.get('username')
         _LOG.info(f'[auth] User {username} is authenticated with JWT')
         return username
@@ -191,6 +207,7 @@ class PermissionsService:
 
 def permissions_handler_instance():
     return PermissionsService(
-        user_service=SERVICE_PROVIDER.user_service(),
-        group_service=SERVICE_PROVIDER.group_service(),
-        policy_service=SERVICE_PROVIDER.policy_service())
+        user_service=SERVICE_PROVIDER.user_service,
+        group_service=SERVICE_PROVIDER.group_service,
+        policy_service=SERVICE_PROVIDER.policy_service
+    )

@@ -9,7 +9,7 @@ def get_open_api_spec_template(prefix):
         },
         "servers": [
             {
-                "url": f'{prefix if prefix else "/"}',
+                "url": f'{prefix or "/"}',
                 'description': 'Default server'
             }
         ],
@@ -18,6 +18,12 @@ def get_open_api_spec_template(prefix):
                 "BasicAuth": {
                     "scheme": "basic",
                     "type": "http"
+                },
+                'BearerAuth': {
+                    'type': 'apiKey',
+                    'description': 'Access token',
+                    'name': 'Authorization',
+                    'in': 'header',
                 }
             },
             "schemas": {

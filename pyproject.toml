@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+
+[project]
+name = "modular-api"
+description = "Modular API"
+requires-python = ">=3.10"
+readme = "README.md"
+dynamic = ["version"]
+dependencies = [
+    'toml==0.10.2',
+    'gunicorn==21.2.0',
+    'bottle==0.12.25',
+    'click==7.1.2',
+    'ddtrace==0.61.5',
+    'packaging==21.3',
+    'prettytable==3.9.0',
+    'PyJWT==2.8.0',
+    'pynamodb==5.3.2',
+    'python-dateutil==2.8.2',
+    'typing_extensions==4.10.0',
+    'limits==3.9.0',
+    'modular-cli-sdk>=2.0.0,<3.0.0',
+    'modular_sdk==5.1.1',
+    'python-dotenv==1.0.1'
+]
+
+[project.scripts]
+modular = "modular_api_cli.modular_cli_group.modular:modular"
+
+[tool.setuptools.dynamic]
+version = {attr = "modular_api.version.__version__"}
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["modular_api*", "modular_api_cli*"]
+
+[tool.pyright]
+include = ["modular_api", "modular_api_cli"]
+exclude = [
+    "**/__pycache__",
+]
+pythonVersion = "3.10"
+reportIncompatibleMethodOverride = "warning"

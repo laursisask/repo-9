@@ -2,26 +2,27 @@ import json
 import os
 from datetime import datetime, timezone
 from pathlib import Path
+from itertools import chain
 
 from modular_api.helpers.constants import LOG_FOLDER, ID, TIMESTAMP, KEY
 from modular_api.helpers.decorators import CommandResponse
 from modular_api.helpers.exceptions import ModularApiBadRequestException
-from modular_api.helpers.log_helper import get_cli_logger
+from modular_api.helpers.log_helper import get_logger
 
-_LOG = get_cli_logger('usage_handler')
+_LOG = get_logger(__name__)
 
 
 class UsageHandler:
     def __init__(self, usage_service):
         self.usage_service = usage_service
 
-    def get_stats_handler(self, from_date, to_date, display_table, path):
-        _LOG.info(f'Going to get usage statistic. Parameters: from_date '
-                  f'\'{from_date}\', to_date \'{to_date}\', '
+    def get_stats_handler(self, from_month, to_month, display_table, path):
+        _LOG.info(f'Going to get usage statistic. Parameters: from_month '
+                  f'\'{from_month}\', to_month \'{to_month}\', '
                   f'display_table \'{display_table}\', path \'{path}\'')
         try:
-            if from_date:
-                fd_dt = datetime.strptime(from_date, '%Y-%m-%d')
+            if from_month:
+                fd_dt = datetime.strptime(from_month, '%Y-%m')
                 from_date = int(fd_dt.timestamp()) * 1000
             else:
                 utc_time_now = datetime.now(timezone.utc)
@@ -29,24 +30,28 @@ class UsageHandler:
                     day=1, hour=0, minute=0, second=0)
                 from_date = int(utc_time_now.timestamp() * 1000)
 
-            if to_date:
-                td_dt = datetime.strptime(to_date, '%Y-%m-%d')
-                td_dt = td_dt.replace(hour=23, minute=59, second=59)
+            if to_month:
+                td_dt = datetime.strptime(to_month, '%Y-%m')
+                td_dt = td_dt.replace(day=1, hour=0, minute=0, second=0)
                 to_date = int(td_dt.timestamp()) * 1000
+            else:
+                to_date = None
         except ValueError:
             _LOG.error('Invalid date format')
             raise ModularApiBadRequestException(
-                'Please check date(s) spelling, required format is yyyy-mm-dd')
+                'Please check date(s) spelling, required format is "yyyy-mm"')
 
         if (from_date and to_date) and (from_date >= to_date):
             _LOG.error('Invalid period')
             raise ModularApiBadRequestException(
-                'Start date can not be greater than or equal to the end date')
+                'Start month can not be greater than or equal to the end '
+                'month')
 
-        raw_result = list()
-        for item in self.usage_service.modules_list:
-            module_stats = self.usage_service.get_stats(item, from_date, to_date)
-            raw_result.extend(module_stats)
+        it = chain.from_iterable(
+            self.usage_service.get_stats(key, from_date, to_date)
+            for key in self.usage_service.modules_info
+        )
+        raw_result = [i.get_json() for i in it]
 
         if not raw_result:
             _LOG.info('No usage statistic by provided filters')

@@ -1,20 +1,19 @@
 import json
 import os
-import traceback
 from copy import deepcopy
 from functools import wraps
 
 import click
 from prettytable import PrettyTable
-from datetime import datetime
 
-from modular_api.helpers.exceptions import ModularApiBaseException
-from modular_api.helpers.log_helper import get_logger, file_handler
 from modular_api.helpers.constants import CLI_VIEW, TABLE_VIEW, \
     MODULAR_API_RESPONSE, MAX_COLUMNS_WIDTH
+from modular_api.helpers.date_utils import utc_time_now
+from modular_api.helpers.exceptions import ModularApiBaseException
+from modular_api.helpers.log_helper import get_logger, API_LOGS_FILE
+from modular_api.services import SERVICE_PROVIDER
 
-_LOG = get_logger('error_response')
-LOG_FILE = file_handler.baseFilename
+_LOG = get_logger(__name__)
 new_line = os.linesep
 
 
@@ -45,7 +44,7 @@ class ResponseDecorator:
     """
 
     def __init__(self, stdout, error_message):
-        self.stdout = stdout
+        self.stdout = stdout  # it's not stdout, it is a print function
         self.error_message = error_message
 
     def __call__(self, fn):
@@ -55,13 +54,13 @@ class ResponseDecorator:
             try:
                 resp = fn(*args, **kwargs)
             except ModularApiBaseException as context:
-                exception_log(context)
+                _LOG.info('ModularApiBaseException occurred')
                 resp = CommandResponse(message=str(context), error=True)
-            except Exception as context:
-                exception_log(context)
+            except Exception:
+                _LOG.exception('Unexpected exception occurred')
                 message = f'Unexpected exception occurs.{os.linesep}' \
                           f'See detailed info and traceback in ' \
-                          f'{os.path.join(LOG_FILE)}'
+                          f'{API_LOGS_FILE}'
                 resp = CommandResponse(message=message, error=True)
 
             func_result = ResponseFormatter(function_result=resp,
@@ -99,13 +98,13 @@ class ExceptionDecorator:
             try:
                 return fn(*args, **kwargs)
             except ModularApiBaseException as context:
-                exception_log(context)
+                _LOG.info('ModularApiBaseException occurred')
                 resp = CommandResponse(message=str(context), error=True)
-            except Exception as context:
-                exception_log(context)
+            except Exception:
+                _LOG.exception('Unexpected exception occurred')
                 message = f'Unexpected exception occurs.{os.linesep}' \
                           f'See detailed info and traceback in ' \
-                          f'{os.path.join(LOG_FILE)}'
+                          f'{API_LOGS_FILE}'
                 resp = CommandResponse(message=message, error=True)
 
             func_result = ResponseFormatter(function_result=resp,
@@ -151,11 +150,9 @@ class ResponseFormatter:
             self.unpack_success_result_values(response_meta=response_meta)
         if table_title and items:
             return self.process_table_view(response_meta=response_meta)
-        result_message = f'Response:{os.linesep}{message}' \
-            if not response_meta.error else f'Error:{os.linesep}{message}'
-        if warnings:
-            result_message += _prettify_warnings(warnings)
-        return result_message
+        if response_meta.error:
+            return f'Error:{os.linesep}{message}'
+        return message  # probably json, so we don't want to mangle it
 
     def process_table_view(self, response_meta):
         response = PrettyTable()
@@ -226,15 +223,6 @@ def _prettify_warnings(warnings: list):
                                  for i in range(len(warnings))])
 
 
-def exception_log(context):
-
-    _LOG.error(f'{new_line}--- TRACEBACK START ---{new_line}')
-    traceback.print_tb(tb=context.__traceback__, limit=15,
-                       file=open(LOG_FILE, 'a'))
-    _LOG.error(f'{new_line}--- TRACEBACK END ---{new_line}')
-    error_message, *_ = context.args
-
-
 def get_command_info(func):
     group = func.__module__.split(".")[-1]
     command = func.__name__
@@ -253,7 +241,6 @@ def produce_audit(secured_params=None):
         @wraps(func)
         def wrapper(*args, **kwargs):
             group, command = get_command_info(func=func)
-            timestamp = datetime.utcnow()
             parameters = deepcopy(kwargs)
             for param, value in kwargs.items():
                 if secured_params and param in secured_params:
@@ -263,11 +250,10 @@ def produce_audit(secured_params=None):
             except ModularApiBaseException as e:
                 raise e
 
-            from modular_api.services import SERVICE_PROVIDER
-            SERVICE_PROVIDER.audit_service().save_audit(
+            SERVICE_PROVIDER.audit_service.save_audit(
                 group=group,
                 command=command,
-                timestamp=timestamp,
+                timestamp=utc_time_now().isoformat(),
                 parameters=json.dumps(parameters),
                 result=func_result.message if func_result.message else str(func_result.items),
                 warnings=func_result.warnings
