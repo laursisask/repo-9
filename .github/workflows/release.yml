@@ -12,16 +12,16 @@ jobs:
     strategy:
       matrix:
         image:
-          - alpine
-          - android-armv7
-          - android-arm64
+          # - alpine
+          # - android-armv7
+          # - android-arm64
           - centos7-devtoolset7
-          - linux-armv6
-          - linux-armv7
-          - linux-armv7l-musl
-          - linux-arm64
-          - linux-arm64-lts
-          - linux-arm64-musl
+          # - linux-armv6
+          # - linux-armv7
+          # - linux-armv7l-musl
+          # - linux-arm64
+          # - linux-arm64-lts
+          # - linux-arm64-musl
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -41,10 +41,10 @@ jobs:
         with:
           context: ${{ matrix.image }}
           tags: |
-            ghcr.io/prebuild/${{ matrix.image }}:latest
-            ghcr.io/prebuild/${{ matrix.image }}:${{ env.MAJOR }}
-            ghcr.io/prebuild/${{ matrix.image }}:${{ env.MINOR }}
-            ghcr.io/prebuild/${{ matrix.image }}:${{ env.PATCH }}
+            ghcr.io/bmacnaughton/${{ matrix.image }}:latest
+            ghcr.io/bmacnaughton/${{ matrix.image }}:${{ env.MAJOR }}
+            ghcr.io/bmacnaughton/${{ matrix.image }}:${{ env.MINOR }}
+            ghcr.io/bmacnaughton/${{ matrix.image }}:${{ env.PATCH }}
           labels: |
             org.opencontainers.image.version=${{ env.PATCH }}
             org.opencontainers.image.source=${{ github.event.repository.html_url }}

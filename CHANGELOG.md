@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.0.0] - 2024-07-17
+
+- Update `centos7-devtoolset7` image sine RedHat archived yum repo.
+
 ## [2.2.0] - 2024-02-02
 
 ### Added

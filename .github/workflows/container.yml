@@ -1,0 +1,17 @@
+name: test-container-job
+on: workflow_dispatch
+jobs:
+  container-test-job:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/bmacnaughton/centos7-devtoolset7:latest
+      env:
+        NODE_ENV: production
+      # ports:
+      #   - 80
+      volumes:
+        - my_docker_volume:/volume_mount
+      # options: --cpus 1
+    steps:
+      - name: see what's around
+        run: find / -type d
