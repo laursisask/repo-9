@@ -1,17 +1,31 @@
 name: test-container-job
 on: workflow_dispatch
 jobs:
-  container-test-job:
+  # this sucks. can't checkout repo then invoke container with volume of
+  # repo. so:
+  # - checkout repo
+  # - docker run with volume mounts input/output directories
+  # - docker moves files to output directory so this script is ignorant of dir structure
+  # - this script collects built files
+
+  build:
+    strategy:
+      matrix:
+        image: [centos7-devtoolset7]
+    name: Building ${{ matrix.image }} binaries
     runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/bmacnaughton/centos7-devtoolset7:latest
-      env:
-        NODE_ENV: production
-      # ports:
-      #   - 80
-      volumes:
-        - ${{ github.workspace }}:/volume_mount
-      # options: --cpus 1
+
+    timeout-minutes: 20
     steps:
-      - name: see what's around
-        run: find /volume_mount -name '*' && find /home -type d
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup node
+        uses: actions/setup-node@v2
+        with:
+          node-version: 20
+      - name: Install dependencies
+        run: npm install
+      - name: Build binaries
+        run: |
+          docker run --rm -v ${{ github.workspace }}:/volume_mount -w /volume_mount ghcr.io/bmacnaughton/${{ matrix.image }}:latest find . -type d
+
