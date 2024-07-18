@@ -28,4 +28,5 @@ jobs:
       - name: Build binaries
         run: |
           docker run --rm -v ${{ github.workspace }}:/volume_mount -w /volume_mount ghcr.io/bmacnaughton/${{ matrix.image }}:latest find /volume_mount -type d
-
+      - name: Show files
+        run: find ${{ github.workspace }}
