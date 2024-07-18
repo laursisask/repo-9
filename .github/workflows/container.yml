@@ -27,5 +27,5 @@ jobs:
       #   run: npm install
       - name: Build binaries
         run: |
-          docker run --rm -v ${{ github.workspace }}:/volume_mount -w /volume_mount ghcr.io/bmacnaughton/${{ matrix.image }}:latest find . -type d
+          docker run --rm -v ${{ github.workspace }}:/volume_mount -w /volume_mount ghcr.io/bmacnaughton/${{ matrix.image }}:latest find /volume_mount -type d
 
