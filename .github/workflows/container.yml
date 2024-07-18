@@ -17,14 +17,16 @@ jobs:
 
     timeout-minutes: 20
     steps:
-      # - name: Checkout
-      #   uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
       # - name: Setup node
       #   uses: actions/setup-node@v2
       #   with:
       #     node-version: 20
       # - name: Install dependencies
       #   run: npm install
+
       - name: Build binaries
         run: |
           docker run --rm -v ${{ github.workspace }}:/volume_mount -w /volume_mount ghcr.io/bmacnaughton/${{ matrix.image }}:latest find /volume_mount -type d
