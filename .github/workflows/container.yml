@@ -10,7 +10,7 @@ jobs:
       # ports:
       #   - 80
       volumes:
-        - my_docker_volume:/volume_mount
+        - ${{ github.workspace }}:/volume_mount
       # options: --cpus 1
     steps:
       - name: see what's around
