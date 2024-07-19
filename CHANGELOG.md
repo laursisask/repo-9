@@ -1,8 +1,12 @@
 # Changelog
 
+## [3.1.0] - 2024-07-18
+
+- Add `entrypoint` and `cmd` to `centos7-devtoolset7`.
+
 ## [3.0.0] - 2024-07-17
 
-- Update `centos7-devtoolset7` image sine RedHat archived yum repo.
+- Update `centos7-devtoolset7` image since RedHat archived yum repo.
 
 ## [2.2.0] - 2024-02-02
 

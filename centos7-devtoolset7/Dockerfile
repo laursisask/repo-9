@@ -83,4 +83,9 @@ python --version
 ENV NO_UPDATE_NOTIFIER=true
 ENV npm_config_update_notifier=false
 
-WORKDIR /app
+WORKDIR /repo
+
+ENTRYPOINT ["/repo/entrypoint.sh"]
+CMD ["npm", "run", "build:centos7-devtools7"]
+
+
