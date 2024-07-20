@@ -2,7 +2,9 @@
 
 ## [3.1.0] - 2024-07-18
 
-- Add `entrypoint` and `cmd` to `centos7-devtoolset7`.
+- rename `centos7-devtoolset7` to `centos7`
+- add generic `entrypoint` and `cmd` to all images
+- update all images to use `ENV key=value` syntax.
 
 ## [3.0.0] - 2024-07-17
 

@@ -7,10 +7,13 @@ RUN addgroup -g 2000 travis && \
   python --version
 
 USER node
-ENV HOME /home/node
+ENV HOME=/home/node
 
 # Disable npm update check
-ENV NO_UPDATE_NOTIFIER true
-ENV npm_config_update_notifier false
+ENV NO_UPDATE_NOTIFIER=true
+ENV npm_config_update_notifier=false
 
-WORKDIR /app
+WORKDIR /repo
+
+ENTRYPOINT ["sh"]
+CMD ["scripts/build-generic.sh", "alpine"]

@@ -11,7 +11,7 @@ jobs:
   build:
     strategy:
       matrix:
-        image: [centos7-devtoolset7]
+        image: [centos7, linux-arm64, alpine]
     name: Building ${{ matrix.image }} binaries
     runs-on: ubuntu-latest
 
@@ -29,6 +29,6 @@ jobs:
 
       - name: Build binaries
         run: |
-          docker run --rm -v ${{ github.workspace }}:/volume_mount -w /volume_mount ghcr.io/bmacnaughton/${{ matrix.image }}:latest find /volume_mount -type d
+          docker run --rm -v ${{ github.workspace }}:/repo -w /repo ghcr.io/bmacnaughton/${{ matrix.image }}:latest
       - name: Show files
         run: find ${{ github.workspace }}
