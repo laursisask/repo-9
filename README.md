@@ -1,5 +1,35 @@
 # docker-images
 
+Originally used by `prebuildify-cross`, these images were modified by Contrast Security, Inc. so
+they had fewer dependencies. The primary changes are that the containers now require that the repo
+be mapped to `/repo`, `entrypoint` is set to `sh`, and `cmd` is set to `scripts/build-generic.sh`
+with an argument of the image name, e.g., `centos7`.
+
+From `centos7/Dockerfile`:
+```
+ENTRYPOINT ["sh"]
+CMD ["scripts/build-generic.sh", "centos7"]
+```
+
+How to invoke the `centos7` image:
+```
+docker run -v /home/bruce/github/csi/fn-inspect:/repo ghcr.io/bmacnaughton/centos7
+
+# The docker image will invoke `/home/bruce/github/csi/fn-inspect/scripts/build-generic.sh`
+# as a shell script with the argument `centos7` (the name of the image). The command that is
+# executed is relative to `/repo`, so it will be:
+#
+# `sh scripts/build-generic.sh centos7`
+```
+
+## build-generic.sh
+
+The `build-generic.sh` script can be invoked from images that do not have `bash`, so your
+script must be Posix-compliant in order to work with `ash`, `dash`, etc.
+
+# THE FOLLOWING TEXT NEEDS TO BE UPDATED
+
+
 **Docker images for cross compiling prebuilt binaries for Node.js. Used by [`prebuildify-cross`](https://github.com/prebuild/prebuildify-cross).**
 
 [![Release](https://img.shields.io/github/v/release/prebuild/docker-images)](https://github.com/prebuild/docker-images/releases/latest)

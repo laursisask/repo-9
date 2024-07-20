@@ -1,3 +1,7 @@
+# this workflow releases the container images to ghcr.io
+# trigger it by pushing a tag of the form v1.2.3
+# Note - the push will fail if the CHANGELOG.md does not contain
+# an entry for the version being released.
 name: Release
 on:
   push:
@@ -12,14 +16,14 @@ jobs:
     strategy:
       matrix:
         image:
-          # - alpine
+          - alpine
           # - android-armv7
           # - android-arm64
-          - centos7-devtoolset7
+          - centos7
           # - linux-armv6
           # - linux-armv7
           # - linux-armv7l-musl
-          # - linux-arm64
+          - linux-arm64
           # - linux-arm64-lts
           # - linux-arm64-musl
     steps:

@@ -14,24 +14,24 @@ RUN groupadd --gid 1000 node && useradd --uid 1000 --gid node --shell /bin/bash 
   rm -rf /var/lib/apt/lists/*
 
 USER node
-ENV HOME /home/node
+ENV HOME=/home/node
 
-ENV PREBUILD_STRIP_BIN ${CROSS_ROOT}/bin/llvm-strip
-ENV PREBUILD_ARCH arm64
-ENV PREBUILD_ARMV 8
-ENV PREBUILD_PLATFORM android
+ENV PREBUILD_STRIP_BIN=${CROSS_ROOT}/bin/llvm-strip
+ENV PREBUILD_ARCH=arm64
+ENV PREBUILD_ARMV=8
+ENV PREBUILD_PLATFORM=android
 
 # TODO: These are for backwards compat. Remove once we have versioning.
-ENV STRIP ${PREBUILD_STRIP_BIN}
-ENV ARCH ${PREBUILD_ARCH}
-ENV ARM_VERSION ${PREBUILD_ARMV}
-ENV TARGET_PLATFORM ${PREBUILD_PLATFORM}
+ENV STRIP=${PREBUILD_STRIP_BIN}
+ENV ARCH=${PREBUILD_ARCH}
+ENV ARM_VERSION=${PREBUILD_ARMV}
+ENV TARGET_PLATFORM=${PREBUILD_PLATFORM}
 
 ENV GYP_DEFINES target_arch=arm64 android_target_arch=arm64 host_os=linux OS=android
 
 # Disable npm update check
-ENV NO_UPDATE_NOTIFIER true
-ENV npm_config_update_notifier false
+ENV NO_UPDATE_NOTIFIER=true
+ENV npm_config_update_notifier=false
 
 # Set inherited dockcross labels to empty values.
 # Labels can't be deleted (https://github.com/moby/moby/issues/3465)
@@ -42,4 +42,7 @@ LABEL org.label-schema.vcs-ref=
 LABEL org.label-schema.vcs-url=
 LABEL org.label-schema.version=
 
-WORKDIR /app
+WORKDIR /repo
+
+ENTRYPOINT ["sh"]
+CMD ["scripts/build-generic.sh", "android-arm64"]

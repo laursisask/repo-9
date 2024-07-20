@@ -6,6 +6,6 @@ updates:
       interval: monthly
   # Other base images are unversioned
   - package-ecosystem: docker
-    directory: /centos7-devtoolset7
+    directory: /centos7
     schedule:
       interval: monthly
