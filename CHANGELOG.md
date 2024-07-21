@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.2.0] - 2024-07-21
+
+- don't set user `node` or `/home/node` in `centos7`
+
 ## [3.1.0] - 2024-07-18
 
 - rename `centos7-devtoolset7` to `centos7`
