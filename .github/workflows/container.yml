@@ -29,6 +29,6 @@ jobs:
 
       - name: Build binaries
         run: |
-          docker run --rm -v ${{ github.workspace }}:/repo -w /repo ghcr.io/bmacnaughton/${{ matrix.image }}:latest
+          docker run --rm -v ${{ github.workspace }}:/repo -w /repo ghcr.io/contrast-security-oss/${{ matrix.image }}:latest
       - name: Show files
         run: find ${{ github.workspace }}
