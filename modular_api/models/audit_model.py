@@ -18,7 +18,7 @@ class Audit(BaseModel):
     parameters = UnicodeAttribute(null=True)
     result = UnicodeAttribute(null=True)
     warnings = ListAttribute(default=list)
-    hash_sum = UnicodeAttribute(attr_name='hash')  # todo after refactoring can be broken
+    hash_sum = UnicodeAttribute(attr_name='hash')
 
     def response_object_without_hash(self) -> dict:
         return {

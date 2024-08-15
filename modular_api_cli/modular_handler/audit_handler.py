@@ -19,17 +19,18 @@ class AuditHandler:
     def __init__(self, audit_service):
         self.audit_service: AuditService = audit_service
 
-    def describe_audit_handler(self, group, command, from_date, to_date,
-                               limit, invalid, table_response,
-                               json_response) -> CommandResponse:
+    def describe_audit_handler(
+            self,
+            group: str | None = None,
+            command: str | None = None,
+            from_date: str | None = None,
+            to_date: str | None = None,
+            limit: int = 10,
+            invalid: bool = False,
+    ) -> CommandResponse:
         """
         Querying audit events by provided filters
         """
-        if table_response and json_response:
-            _LOG.error('Wrong parameters passed')
-            raise ModularApiBadRequestException(
-                'Please specify only one parameter - table or json')
-
         _LOG.info(f'Describing audit events. Parameters: group \'{group}\', '
                   f'command \'{command}\', from_date \'{from_date}\', '
                   f'to_date \'{to_date}\', limit \'{limit}\', '
@@ -67,7 +68,9 @@ class AuditHandler:
             if not audit_list:
                 _LOG.info('There are not events by provided filters')
                 return CommandResponse(
-                    message='There are not events by provided filters')
+                    message='There are not events by provided filters',
+                    error=True,
+                )
             audit_list.sort(key=lambda elem: elem.get('Timestamp'))
             file_name = self._save_file(audit_list)
             if file_name:
@@ -81,20 +84,10 @@ class AuditHandler:
                                 f'use \'--invalid\' flag'
             _LOG.warning('Invalid audit events detected')
 
-            if json_response:
-                for item in audit_list:
-                    item["Result"] = ' '.join(item["Result"].split())
-                    for key, value in item.items():
-                        try:
-                            item[key] = json.loads(value)
-                        except:
-                            pass
-                return CommandResponse(
-                    message=json.dumps(audit_list, indent=4)
-                )
             return CommandResponse(
                 table_title=valid_title if not invalid_list else compromised_title,
-                items=audit_list)
+                items=audit_list,
+            )
 
     @staticmethod
     def _save_file(items) -> str:

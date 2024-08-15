@@ -73,7 +73,6 @@ class AuditService:
         elif to_date:
             range_key_condition &= (Audit.timestamp <= to_date)
         else:
-            # todo hidden behaviour. Move out of this method or somehow
             # describe in docs
             initial_date = datetime.today().replace(
                 hour=0, minute=0, second=0, microsecond=0) - timedelta(days=7)

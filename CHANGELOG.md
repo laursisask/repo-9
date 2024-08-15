@@ -1,5 +1,19 @@
 CHANGELOG
 
+
+# [4.0.5] - 2024-06-25
+* Update library version from `modular-sdk==5.1.1` to `modular-sdk>=5.1.3,<6.0.0`
+* Update library version from `typing-extensions==4.10.0` to `typing-extensions>=4.10.0,<5.0.0`
+
+# [4.0.4] - 2024-06-19
+* Add fixed version `tenacity==8.4.1` in requirements.txt to resolve import issue
+
+# [4.0.3] - 2024-06-10
+* Add error handling to return exit code 1 when `modular_api_cli` command execution fails
+* Update parameter handling for `--json` and `--table` in commands:
+  * `modular describe`, `modular audit`, `user get_meta`
+  * `user describe`, `policy describe`
+
 # [4.0.2] - 2024-04-29
 * Fix meta keys validation logic to operate independent of file formatting
 

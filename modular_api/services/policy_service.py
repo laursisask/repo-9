@@ -1,6 +1,7 @@
 import json
 from typing import Iterable
 
+from pynamodb.pagination import ResultIterator
 from modular_api.helpers.constants import ACTIVATED_STATE
 from modular_api.helpers.date_utils import utc_time_now
 from modular_api.helpers.exceptions import ModularApiBadRequestException
@@ -87,10 +88,6 @@ class PolicyService:
             creation_date=utc_time_now().isoformat()
         )
 
-    def extract_policies_names(self):
-        # todo, remove, do not used this method
-        return [policy.policy_name for policy in self.scan_policies()]
-
     @staticmethod
     def calculate_policy_hash(policy_item: Policy):
         _LOG.info(f'Calculating \'{policy_item.policy_name}\' policy hash ')
@@ -113,10 +110,9 @@ class PolicyService:
         policy_item.save()
 
     @staticmethod
-    def scan_policies() -> list[Policy]:
+    def scan_policies() -> ResultIterator[Policy]:
         _LOG.info('Scanning policies')
-        # TODO do not use it and remove
-        return list(Policy.scan())
+        return Policy.scan()
 
     @staticmethod
     def describe_policy(policy_name: str) -> Policy | None:

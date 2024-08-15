@@ -12,20 +12,22 @@ from modular_api.helpers.constants import (
     MODULAR_USER_META_TYPES,
 )
 from modular_api.services.group_service import GroupService
-from modular_api.services.permissions_cache_service import \
-    permissions_handler_instance, \
-    PermissionsService
+from modular_api.services.permissions_cache_service import (
+    permissions_handler_instance, PermissionsService,
+)
 from modular_api.services.policy_service import PolicyService
-from modular_api.helpers.date_utils import convert_datetime_to_human_readable, \
-    utc_time_now
-from modular_api.helpers.password_util import generate_password, \
-    validate_password, \
-    secure_string
+from modular_api.helpers.date_utils import (
+    convert_datetime_to_human_readable, utc_time_now,
+)
+from modular_api.helpers.password_util import (
+    generate_password, validate_password, secure_string,
+)
 from modular_api.services.user_service import UserService
 from modular_api.helpers.decorators import CommandResponse
-from modular_api.helpers.exceptions import ModularApiConfigurationException, \
-    ModularApiBadRequestException, ModularApiConflictException, \
-    ModularApiUnauthorizedException
+from modular_api.helpers.exceptions import (
+    ModularApiConfigurationException, ModularApiBadRequestException,
+    ModularApiConflictException, ModularApiUnauthorizedException,
+)
 
 SET_META_CMD = ('modular user set_meta_attribute --meta_type allowed_values|'
                 'aux_data --key $parameter_name --value $parameter_value')
@@ -39,7 +41,12 @@ class UserHandler:
         self.group_service: GroupService = group_service
         self.policy_service: PolicyService = policy_service
 
-    def add_user_handler(self, username, groups, password) -> CommandResponse:
+    def add_user_handler(
+            self,
+            username: str,
+            groups: str,
+            password: str,
+    ) -> CommandResponse:
         """
         Adds user to ModularUser table
         :param username: Username that will be set to the user
@@ -86,8 +93,9 @@ class UserHandler:
 
         skipped_groups = list()
         for group in groups:
-            if group not in [group_name.group_name for group_name in
-                             existing_groups]:
+            if group not in [
+                group_name.group_name for group_name in existing_groups
+            ]:
                 skipped_groups.append(group)
 
         if skipped_groups:
@@ -246,8 +254,11 @@ class UserHandler:
         return CommandResponse(
             message=f'User \'{username}\' has been successfully unblocked')
 
-    def change_user_password_handler(self, username, password) -> \
-            CommandResponse:
+    def change_user_password_handler(
+            self,
+            username: str,
+            password: str,
+    ) -> CommandResponse:
         """
         Change user password to administrator defined
         :param username: Username
@@ -422,13 +433,6 @@ class UserHandler:
             message=f'User \'{username}\' has been updated',
             warnings=warnings_list)
 
-    @staticmethod
-    def check_user_items_exist(user_items: list) -> None:
-        if not user_items:
-            raise ModularApiBadRequestException(
-                'User(s) does not exist. To add user please execute '
-                '\'modular user add\' command')
-
     def resolve_policy_allowed_actions(self, policies):
         actions = []
         errors = []
@@ -488,13 +492,11 @@ class UserHandler:
             'Consistency status': 'Compromised' if is_compromised else 'OK'
         }
 
-    def describe_single_user(self, username, json_response):
-        existed_user = self.user_service.describe_user(
-            username=username)
+    def describe_single_user(self, username):
+        existed_user = self.user_service.describe_user(username=username)
 
         if not existed_user:
-            raise ModularApiBadRequestException(
-                f'No such user: \'{username}\'')
+            raise ModularApiBadRequestException(f'No such user: \'{username}\'')
 
         policies_groups_warnings, _ = \
             self.validate_groups_policies_and_resolve_actions(
@@ -510,11 +512,6 @@ class UserHandler:
             user_compromised=user_compromised,
             policy_group_compromised=is_policies_groups_compromised
         )
-
-        if json_response:
-            return CommandResponse(
-                message=json.dumps(pretty_user, indent=4)
-            )
 
         return CommandResponse(
             table_title='User description',
@@ -593,28 +590,24 @@ class UserHandler:
             f'Status: {effect}{os.linesep}'
         )
 
-    def describe_user_handler(self, username, table_response,
-                              json_response) -> CommandResponse:
+    def describe_user_handler(
+            self,
+            username: str | None = None,
+    ) -> CommandResponse:
         """
         Describes user entity from User model or list all existed users
         :param username: Username that will be deleted from white list
-        :param table_response: output will be in table format
-        :param json_response: output will be in json format
         :return: CommandResponse
         """
-
-        if table_response and json_response:  # todo why is it here
-            _LOG.error('Wrong parameters passed')
-            raise ModularApiBadRequestException(
-                'Please specify only one parameter - table or json')
-
         _LOG.info(f'Going to describe user \'{username}\'')
         if username:
-            return self.describe_single_user(username=username,
-                                             json_response=json_response)
+            return self.describe_single_user(username=username)
 
-        existed_users = self.user_service.scan_users()
-        self.check_user_items_exist(user_items=existed_users)
+        existed_users = tuple(self.user_service.scan_users())
+        if not existed_users:
+            raise ModularApiBadRequestException(
+                'User(s) does not exist. To add user please execute '
+                '\'modular user add\' command')
 
         pretty_users = []
         invalid = 0
@@ -632,15 +625,10 @@ class UserHandler:
         valid_title = 'User(s) description'
         compromised_title = f'User(s) description{os.linesep}WARNING! ' \
                             f'{invalid} compromised users have been detected.'
-
-        if json_response:
-            return CommandResponse(
-                message=json.dumps(pretty_users, indent=4)
-            )
-
         return CommandResponse(
             table_title=compromised_title if invalid else valid_title,
-            items=pretty_users)
+            items=pretty_users,
+        )
 
     def set_user_meta_handler(
             self,
@@ -784,14 +772,7 @@ class UserHandler:
     def describe_user_meta_handler(
             self,
             username: str,
-            json_response: bool,
-            table_response: bool,
     ) -> CommandResponse:
-        if table_response and json_response:
-            _LOG.error('Wrong parameters passed')
-            raise ModularApiBadRequestException(
-                'Please specify only one parameter - table or json'
-            )
         _LOG.info(f'Going to describe \'{username}\' user meta')
         user = self.check_existence_and_get_user(username)
         items = []
@@ -818,10 +799,6 @@ class UserHandler:
                     }
                 )
         _LOG.info('User meta successfully described')
-        if json_response:
-            return CommandResponse(
-                message=json.dumps(items, indent=4)
-            )
         return CommandResponse(
             table_title=f"Meta information for user \'{username}\'",
             items=items

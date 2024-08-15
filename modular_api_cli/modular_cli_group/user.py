@@ -151,21 +151,12 @@ def remove_from_group(username, group):
 @click.option('--username', '-u', type=str,
               help='Username. If not specified - all existing users will '
                    'be listed')
-@click.option('--json', is_flag=True,
-              help='Show response as JSON. Can not be used with --table '
-                   'parameter')
-@click.pass_context
 @ResponseDecorator(click.echo, 'Can not describe user')
-def describe(ctx, username, json):
+def describe(username):
     """
     Describes user(s) information
     """
-    table = ctx.params.get('table', False)
-    return user_handler_instance().describe_user_handler(
-        username=username,
-        table_response=table,
-        json_response=json
-    )
+    return user_handler_instance().describe_user_handler(username=username)
 
 
 @user.command(cls=BaseCommand, name='set_meta_attribute')
@@ -252,20 +243,10 @@ def reset_meta(username):
 
 
 @user.command(cls=BaseCommand, name='get_meta')
-@click.option('--username', '-u', type=str, required=True,
-              help='User name')
-@click.option('--json', is_flag=True,
-              help='Show response as JSON. Can not be used with --table '
-                   'parameter')
-@click.pass_context
+@click.option('--username', '-u', type=str, required=True, help='User name')
 @ResponseDecorator(click.echo, 'Can not describe user meta')
-def get_meta(ctx, username, json):
+def get_meta(username):
     """
     Describe meta information for the specified user
     """
-    table = ctx.params.get('table', False)
-    return user_handler_instance().describe_user_meta_handler(
-        username=username,
-        json_response=json,
-        table_response=table
-    )
+    return user_handler_instance().describe_user_meta_handler(username=username)

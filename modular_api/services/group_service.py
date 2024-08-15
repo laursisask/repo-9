@@ -32,7 +32,6 @@ class GroupService:
     @staticmethod
     def scan_groups(filter_condition=None) -> ResultIterator[Group]:
         _LOG.info('Scanning groups')
-        # todo remove of add some limits or do smt but don't use scan
         return Group.scan(filter_condition=filter_condition)
 
     @staticmethod

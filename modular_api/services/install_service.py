@@ -470,7 +470,10 @@ def uninstall_module(module_name):
         message=f'\'{module_name}\' successfully uninstalled')
 
 
-def check_and_describe_modules(table_response, json_response):
+def check_and_describe_modules(
+        table_response: bool | None = None,
+        json_response: bool | None = None,
+) -> CommandResponse:
     if table_response and json_response:
         _LOG.error('Wrong parameters passed')
         raise ModularApiBadRequestException(
@@ -508,7 +511,7 @@ def check_and_describe_modules(table_response, json_response):
     for module_name in installed_modules_list:
         for package_name in installed_packages_list:
             item_name, item_version = package_name.split('@')
-            if item_name == 'modular-sdk':
+            if item_name == 'modular_sdk':
                 modular_sdk_version = modular_sdk_version.format(item_version)
             if item_name == 'modular-cli-sdk':
                 modular_cli_sdk_version = modular_cli_sdk_version.format(item_version)
