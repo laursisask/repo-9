@@ -29,7 +29,7 @@ Typically, a service uses the following elements:
 * **Authorization**: ABAC
 * **CLI**: Thin client, descriptor for Modular-API
 * **Compute**: Lambda, AWS Batch, EKS
-* **Runtimes**: Python 3.8+, Java 11, NodeJS 18.16.0
+* **Runtimes**: Python 3.10, Java 17, NodeJS 18.16.0
 * **Persistence**: AWS DynamoDB, MongoDB Atlas, AWS DocumentDB, AWS RDS, S3
 
 The Modular-API includes interface descriptors(CLI Clients). A descriptor is a file 
@@ -52,7 +52,7 @@ After that, the Modular-API puts its own features set atop of the API/module/res
 ## 2. Installation and Configuration
 #### Installation
 
-The installation of Modular-API assumed that you have Python3.9 and pip installed.
+The installation of Modular-API assumed that you have Python3.10 and pip installed. 
 Use the following links to install the tools in case they are not installed.</br>
 
 [Python download page](https://www.python.org/downloads/)
@@ -65,53 +65,58 @@ environment to protect project against dependency breakage.
 
 [Creating Virtual Environments Guide](https://packaging.python.org/en/latest/tutorials/installing-packages/#creating-and-using-virtual-environments)
 
-* Create: `python -m venv modular_api_venv`  
-* Activate (Linux): `source modular_api_venv/bin/activate`   
-  Activate (Windows): `source modular_api_venv/Scripts/activate`   
-* Installation: `pip install setup.py`  
+* Create a new virtual environment: `python -m venv modular_api_venv` 
+* Activate the virtual environment: 
+  - On Linux/Mac: `source modular_api_venv/bin/activate` 
+  - On Windows: `.\modular_api_venv\Scripts\activate` 
+* Install the current project: `pip install .` or `pip install -e .` 
+  - Note: The `-e` option is for [editable installs](https://pip.pypa.io/en/stable/cli/pip_install/#editable-installs). 
+#### Configuration 
 
-#### Configuration
-
-The API wrapper requires some configurations. Configuration file is `modular_api\startup_config.json`  
+The API wrapper requires some configurations. The configuration file is located at `modular_api\.env`, 
+where the `.env.example` file also resides. This file contains an example of a basic configuration. 
 The content template is placed below:
-
-```json5
-{
-  "swagger-ui": {
-    "path": '$string',
-    "enable": '$boolean'
-  },
-  "host": '$string',
-  "port": '$integer',
-  "secret_passphrase": '$string',
-  "mode": '$string',
-  "url_prefix": '$string',
-  "minimal_allowed_cli_version": '$string'
-}
 ```
-* **Key**: **Value**
-  * **"swagger-ui"**
-    * **"path"**: path where Swagger is available, for example: "/swagger"
-    * **"enable"**: "true/false", if "true" allows to run Swagger
-  * **"host"**: host to run the server, for example - "127.0.0.1"
-  * **"port"**: port to run the server, for example - 8085
-  * **"secret_passphrase"**: secret passphrase used to secure JWT, password. Also used in 
-     policy, group, user items for  hash sum calculation
-  * **"mode"**: mode in which the tool will be run. Allowed values: "saas", "onprem" or "private". 
-    If "onprem/private" mode enabled - local file-like database will be used. If "saas" mode enabled - 
-    AWS DynamoDB will be used 
-  * **"url_prefix"**: modifying the URL pointing to Swagger-API definition - $url_prefix/$path. Can be an empty string
-  * **"minimal_allowed_cli_version"**: check Modular-CLI version, for example - "1.1". If Modular-CLI version 
-    lower than specified in property - warning message will be shown to the user  
+MODULAR_API_SECRET_KEY=passphrase
+MODULAR_API_MODE=saas or onprem
+MODULAR_API_CALLS_PER_SECOND_LIMIT=10
+MODULAR_API_MIN_CLI_VERSION=2.0.0
+MODULAR_API_ENABLE_PRIVATE_MODE=false or true
 
-#### Loggers configuration
+# logs configuration
+MODULAR_API_SERVER_LOG_LEVEL=INFO or DEBUG
+MODULAR_API_CLI_LOG_LEVEL=INFO or DEBUG
+MODULAR_API_LOG_PATH=<path-to-log-file>
 
-There is an option to customize log files paths for Modular API and 
-Modular API CLI using optional environment variables that are described below:
-
-* `SERVICE_LOGS` - custom full path of the Modular API logs
-* `MODULAR_API_CLI_LOGS` - custom full path of the Modular API CLI logs
-
+# mongo db configuration, for onprem/private api mode
+MODULAR_API_MONGO_URI=mongodb://localhost:27017
+MODULAR_API_MONGO_DATABASE=modular-api
+MODULAR_API_RATE_LIMITS_MONGO_DATABASE=modular-api-rate-limits
+```
+* **Basic configuration**: 
+  * **MODULAR_API_SECRET_KEY**: This is the secret passphrase used to secure JWT passwords. 
+    It is also used in policy, group, and user items for hash sum calculation. 
+  * **MODULAR_API_MODE**:This parameter determines the mode in which the tool will run. 
+    If `saas` mode is specified, AWS DynamoDB will be used. If `onprem` mode is specified, MongoDB will be used. 
+  * **MODULAR_API_CALLS_PER_SECOND_LIMIT**: This parameter sets the limit on how many requests 
+    can be processed per second. 
+  * **MODULAR_API_MIN_CLI_VERSION**: This parameter is used to check the `Modular-CLI` version. 
+    If the Modular-CLI version is lower than the value specified in this property, a warning message 
+    will be shown to the user. 
+  * **MODULAR_API_ENABLE_PRIVATE_MODE**: This parameter determines the mode in which the tool will run. 
+    If `private` mode is specified, MongoDB will be used. 
+* **Logs configuration**: 
+  * **MODULAR_API_SERVER_LOG_LEVEL**: This parameter is used to specify the server log level. 
+    The messages can be more detailed based on the level set. 
+  * **MODULAR_API_CLI_LOG_LEVEL**: This parameter is used to specify the server to CLI log level. 
+    The messages can be more detailed based on the level set. 
+  * **MODULAR_API_LOG_PATH**: This sets the log storage path. By default, it's `%USERPROFILE%\.modular_api\log` 
+    (the `C:\Users\User\.modular_api\log` folder in your User directory). 
+* **MongoDB configuration, for onprem/private api mode**: 
+  * **MODULAR_API_MONGO_URI**: Provide the MongoDB connection URI. 
+  * **MODULAR_API_MONGO_DATABASE**: MongoDB name for specific DB collections. 
+  * **MODULAR_API_RATE_LIMITS_MONGO_DATABASE**: Rate limit for MongoDB.
+* **Note:** You can just export necessary envs and do not use `.env` file if you want.
 
 
 
@@ -270,9 +275,7 @@ To install new module into Modular-API check the next steps:
    * `groupname.py` for group with commands
    * `groupname_subgroupname.py` for subgroup commands in group  
    "_" symbol in filename means that first part of name is group name, second one - subgroup name
-
-4) Execute command  
-   `modular install --module_path $PATH_TO_SETUP.PY`
+4) Execute command `modular install --module_path $PATH_TO_SETUP.PY`
 Please note: if module to be installed has dependency from other module(s) `api_module.json` file can 
 be extended with the optional property "dependencies"":
 ```json5
@@ -294,27 +297,33 @@ During installation/uninstallation process all mentioned dependencies will be ch
 ## 8. First run
 
 Check list before start:
-1) `startup_config.json` file properly configured  
-2) `startup_config.json` modes:
-   * if "mode" property is "saas" then AWS DynamoDB will be used as DB. You 
+1) `.env` file properly configured  
+2) `.env` modes:
+   * If `mode` property is `saas` then AWS DynamoDB will be used as DB. You 
    should set the following environment variables:
-      * AWS_ACCESS_KEY_ID
-      * AWS_SECRET_ACCESS_KEY
-      * AWS_SESSION_TOKEN
-      * AWS_REGION  
-   * if "mode" property is "onprem" then local file-based DB will be in usage. By 
-   default, all IO operations with DB use the next storage path: 
-   `~user-home-dir\.modular_api\databases`. You can change this path by setting 
-   environment variable, key - `MODULAR_LOCAL_DB_PATH` and value is the path to the 
-   custom directory 
-3) at least one policy created and attached to the group
-4) user created and group with policy attached to the user
-5) at least one component installed in Modular-API
+     * AWS_ACCESS_KEY_ID
+     * AWS_SECRET_ACCESS_KEY
+     * AWS_SESSION_TOKEN
+     * AWS_REGION  
+   * If `mode` property is `onprem` then AWS MongoDB will be used as DB. You 
+   should set the following in `.env` file: 
+     * MODULAR_API_MONGO_URI: Provide the MongoDB connection URI. 
+     * MODULAR_API_MONGO_DATABASE: MongoDB name for specific DB collections. 
+     * MODULAR_API_RATE_LIMITS_MONGO_DATABASE: Rate limit for MongoDB.
+3) At least one policy created and attached to the group
+4) User created and group with policy attached to the user
+5) At least one component installed in Modular-API
 
-Go to directory `modular_api/` and run command `python index.py`
+Navigate to the `m3-modular-admin/` directory and run the following commands to start the server (examples):
 
-```commandline
-Bottle v0.12.19 server starting up (using WSGIRefServer())...
+* **Gunicorn server**: `modular run --host 0.0.0.0 --port 8086 --prefix /integration --gunicorn --workers 20 --worker_timeout 30 --swagger --swagger_prefix /swagger`
+* **Bottle server**: `modular run --host 127.0.0.1 --port 8085 --prefix /integration --swagger --swagger_prefix /swagger`
+* **`modular run --help`**: Use this command for detailed information.
+* **Note:** These examples will work as expected in `Windows PowerShell` and `Command Prompt`. However, in `Bash`, the 
+values `/integration` and `/swagger` are resolved as file paths. Therefore, you should use `//integration` and `//swagger` instead.
+
+```console
+Bottle v0.12.25 server starting up (using WSGIRefServer())...
 Listening on http://127.0.0.1:8085/
 Hit Ctrl-C to quit.
 ```
@@ -335,12 +344,15 @@ For retrieving commands meta pass parameter `meta`, value is `true`
 
 ![Authorization](pics/postman_login_with_meta.png)
 
-2) Use API meta to find desired command and create new request for command execution  
+2) Use the API meta to find the desired command and create a new request for command execution  
 **Path** : `meta`>`$module_name`>`body`>`$command_name`>`body`>`route`>`path`  
 **Method** : `meta`>`$module_name`>`body`>`$command_name`>`body`>`route`>`method`
-**Authorization** : "Basic auth" with the username and password or "Bearer Token" with the token 
-from `jwt` property in API meta
+**Authorization** : Use `Basic auth` with the username and password, or `Bearer Token` with the token 
+from the `jwt` property in the API meta.
 ![Meta](pics/api_meta_exmpl.png)
+
+Alternatively, Swagger can be used instead of the API meta:
+![Swagger](pics/swagger_exmpl.png)
 
 [Content ↑](#content)
 
@@ -370,7 +382,7 @@ without saving
 <a name="project_information"></a> 
 ## 10. Project Information
 
-**Source Code**: https://github.com/epam/modular-api  
-**Documentation**: https://github.com/epam/modular-api/blob/main//README.md  
+**Source Code**: https://github.com/epam/modular-api/tree/main
+**Documentation**: https://github.com/epam/modular-api/blob/main/README.md 
 **Changelog**: https://github.com/epam/modular-api/blob/main/CHANGELOG.md  
-**Supported Python Version**: 3.9
+**Supported Python Version**: 3.10  

@@ -9,10 +9,13 @@ from modular_api.helpers.constants import REMOVED_STATE, ACTIVATED_STATE
 from modular_api.services.group_service import GroupService
 from modular_api.services.policy_service import PolicyService
 from modular_api.services.user_service import UserService
-from modular_api.helpers.date_utils import convert_datetime_to_human_readable, utc_time_now
+from modular_api.helpers.date_utils import (
+    convert_datetime_to_human_readable, utc_time_now,
+)
 from modular_api.helpers.decorators import CommandResponse
-from modular_api.helpers.exceptions import ModularApiBadRequestException, \
-    ModularApiConflictException
+from modular_api.helpers.exceptions import (
+    ModularApiBadRequestException, ModularApiConflictException,
+)
 
 line_sep = os.linesep
 _LOG = get_logger(__name__)
@@ -259,38 +262,27 @@ class GroupHandler:
                     f'Updated group: \'{group}\'',
             warnings=warnings_list)
 
-    @staticmethod
-    def check_group_items_exist(group_items: list) -> None:
-        if not group_items:
-            _LOG.error('Group(s) does not exist')
-            raise ModularApiBadRequestException(
-                'Group(s) does not exist. Please check spelling')
-
-    def describe_group_handler(self, group: str, table_response,
-                              json_response) -> CommandResponse:
+    def describe_group_handler(
+            self,
+            group: str | None = None,
+    ) -> CommandResponse:
         """
         Describes group content from ModularGroup table for specified group or
         list all existed groups
         :param group: Optional. group name which will be described
-        :param table_response: output will be in table format
-        :param json_response: output will be in json format
         :return: CommandResponse
         """
-
-        if table_response and json_response:
-            _LOG.error('Wrong parameters passed')
-            raise ModularApiBadRequestException(
-                'Please specify only one parameter - table or json')
-
         _LOG.info(f'Going to describe \'{group}\'')
         if group:
-            existed_groups = self.group_service.describe_group(
-                group_name=group)
+            item = self.group_service.describe_group(group)
+            existed_groups = () if not item else (item, )
         else:
-            existed_groups = self.group_service.scan_groups()
-
-        self.check_group_items_exist(group_items=existed_groups)  # todo fix bug
-        existed_groups = existed_groups if not group else [existed_groups]
+            existed_groups = tuple(self.group_service.scan_groups())
+        if not existed_groups:
+            _LOG.warning('Group(s) does not exist')
+            raise ModularApiBadRequestException(
+                'Group(s) does not exist. Please check spelling'
+            )
         pretty_groups = []
         invalid = 0
         for group in existed_groups:
@@ -316,13 +308,10 @@ class GroupHandler:
         compromised_title = f'Group(s) description{os.linesep}WARNING! ' \
                             f'{invalid} compromised group(s) have been detected.'
 
-        if json_response:
-            return CommandResponse(
-                message=json.dumps(pretty_groups, indent=4)
-            )
         return CommandResponse(
             table_title=compromised_title if invalid else valid_title,
-            items=pretty_groups)
+            items=pretty_groups,
+        )
 
     def delete_group_handler(self, group: str) -> CommandResponse:
         """

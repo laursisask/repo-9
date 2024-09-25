@@ -128,7 +128,6 @@ def get_module_group_and_associate_object() -> None:
                                 group_full_name_list[0] == 'private' or
                                 group_full_name_list == 'private')
 
-            # todo what is this
             if is_private_group ^ SP.env.is_private_mode_enabled():
                 continue
             group_path = get_group_path(mount_point=mount_point,
@@ -184,7 +183,7 @@ def generate_group_or_command_help(path, allowed_commands, user_meta):
     requested_command = []
     requested_commands = []
     for itinerary, command_meta in route_meta_mapping.items():
-        if path in itinerary:  # todo, bug?
+        if path in itinerary:
             requested_commands.append(command_meta)
         elif path == itinerary:
             requested_command.append(command_meta)
@@ -373,7 +372,7 @@ def swagger_spec():
     response.content_type = 'application/json'
     return generate_definition(
         commands_def=route_meta_mapping,
-        prefix=request.fullpath[:-len(request.path)]  # todo, maybe won't work in some sophisticated situations but for our case ok
+        prefix=request.fullpath[:-len(request.path)]
     )
 
 
@@ -499,7 +498,7 @@ def index(path: str, allowed_commands=None, user_meta=None):
                                         content=content)
         USAGE_SERVICE.save_stats(request=request, payload=content)
         return error_response
-    finally:  # todo what temp files?, for what? since they are temp files, why should we remove them?
+    finally:
         if temp_files_list:
             for each_file in temp_files_list:
                 os.remove(each_file)

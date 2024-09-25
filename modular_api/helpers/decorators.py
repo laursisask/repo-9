@@ -1,5 +1,6 @@
 import json
 import os
+import sys
 from copy import deepcopy
 from functools import wraps
 
@@ -7,9 +8,11 @@ import click
 from prettytable import PrettyTable
 
 from modular_api.helpers.constants import CLI_VIEW, TABLE_VIEW, \
-    MODULAR_API_RESPONSE, MAX_COLUMNS_WIDTH
+    MODULAR_API_RESPONSE, MAX_COLUMNS_WIDTH, JSON_VIEW
+
 from modular_api.helpers.date_utils import utc_time_now
-from modular_api.helpers.exceptions import ModularApiBaseException
+from modular_api.helpers.exceptions import ModularApiBaseException, \
+    ModularApiBadRequestException
 from modular_api.helpers.log_helper import get_logger, API_LOGS_FILE
 from modular_api.services import SERVICE_PROVIDER
 
@@ -24,8 +27,18 @@ class BaseCommand(click.core.Command):
             len(self.params),
             click.core.Option(
                 ('--table',), is_flag=True,
-                help='Use this parameter to show command`s response in a '
-                     'Table view.'))
+                help='Use this parameter to show command`s response in a Table '
+                     'view'
+            )
+        )
+        self.params.insert(
+            len(self.params),
+            click.core.Option(
+                ('--json',), is_flag=True,
+                help='Use this parameter to show command`s response in a JSON '
+                     'view'
+            )
+        )
 
     def main(self, *args, **kwargs):
         try:
@@ -43,14 +56,16 @@ class ResponseDecorator:
     :return:
     """
 
-    def __init__(self, stdout, error_message):
+    def __init__(self, stdout, error_message: str, custom_view: bool = False):
         self.stdout = stdout  # it's not stdout, it is a print function
         self.error_message = error_message
+        self.custom_view = custom_view
 
     def __call__(self, fn):
         @wraps(fn)
         def decorated(*args, **kwargs):
-            view_format = resolve_output_format(kwargs=kwargs)
+            view_format = CLI_VIEW if self.custom_view else \
+                resolve_output_format(kwargs=kwargs)
             try:
                 resp = fn(*args, **kwargs)
             except ModularApiBaseException as context:
@@ -62,10 +77,11 @@ class ResponseDecorator:
                           f'See detailed info and traceback in ' \
                           f'{API_LOGS_FILE}'
                 resp = CommandResponse(message=message, error=True)
-
             func_result = ResponseFormatter(function_result=resp,
                                             view_format=view_format)
             response = self.stdout(func_result.prettify_response())
+            if resp.error:
+                sys.exit(1)
             return response
         return decorated
 
@@ -73,8 +89,15 @@ class ResponseDecorator:
 def resolve_output_format(kwargs):
     view_format = CLI_VIEW
     table_format = kwargs.pop(TABLE_VIEW, False)
+    json_format = kwargs.pop(JSON_VIEW, False)
+    if table_format and json_format:
+        raise ModularApiBadRequestException(
+            'Please specify only one parameter - table or json'
+        )
     if table_format:
         view_format = TABLE_VIEW
+    if json_format:
+        view_format = JSON_VIEW
     return view_format
 
 
@@ -124,8 +147,8 @@ class CommandResponse:
         self.table_title = table_title
         if not (self.table_title and self.items) and self.message is None:
             self.warnings.append(
-                'Please provide "table_title" and "items" or "message" '
-                'parameter')
+                'Please provide "table_title", "items" or "message" parameter'
+            )
 
 
 class ResponseFormatter:
@@ -134,7 +157,8 @@ class ResponseFormatter:
         self.function_result = function_result
         self.format_to_process_method = {
             CLI_VIEW: self.process_cli_view,
-            TABLE_VIEW: self.process_table_view
+            TABLE_VIEW: self.process_table_view,
+            JSON_VIEW: self.process_json_view,
         }
 
     @staticmethod
@@ -154,7 +178,8 @@ class ResponseFormatter:
             return f'Error:{os.linesep}{message}'
         return message  # probably json, so we don't want to mangle it
 
-    def process_table_view(self, response_meta):
+    def process_table_view(self, response_meta: CommandResponse
+                           ) -> PrettyTable:
         response = PrettyTable()
 
         warnings, message, items, table_title = \
@@ -176,19 +201,19 @@ class ResponseFormatter:
                         all_values[table_key].append(table_value)
                     else:
                         all_values[table_key] = [table_value]
-                    uniq_table_headers.extend(
-                        [table_key for table_key in
-                         each_item.keys()
-                         if table_key not in uniq_table_headers])
+                    uniq_table_headers.extend([
+                        table_key for table_key in each_item.keys()
+                        if table_key not in uniq_table_headers
+                    ])
                     if not width_table_columns.get(table_key) \
                             or width_table_columns.get(table_key) \
                             < len(str(table_value)):
-                        width_table_columns[table_key] \
-                            = len(str(table_value))
+                        width_table_columns[table_key] = len(str(table_value))
             import itertools
             response.field_names = uniq_table_headers
-            response._max_width = {each: MAX_COLUMNS_WIDTH for each in
-                                   uniq_table_headers}
+            response._max_width = {
+                each: MAX_COLUMNS_WIDTH for each in uniq_table_headers
+            }
             last_string_index = 0
             # Fills with an empty content absent items attributes to
             # align the table
@@ -210,6 +235,22 @@ class ResponseFormatter:
             response += _prettify_warnings(response_meta.warnings)
 
         return response
+
+    @staticmethod
+    def process_json_view(response_meta: CommandResponse):
+        json_view = response_meta.items
+        if not json_view:
+            json_view = {
+                'status': 'error' if response_meta.error else 'success',
+                'message': response_meta.message,
+                'warnings': response_meta.warnings,
+                'items': response_meta.items,
+                'table_title': response_meta.table_title,
+            }
+            json_view = {
+                k: v for k, v in json_view.items() if v
+            }
+        return json.dumps(json_view, indent=4)
 
     def prettify_response(self):
         view_processor = self.format_to_process_method[self.view_format]

@@ -115,17 +115,12 @@ def uninstall(module_name):
 
 
 @modular.command(cls=BaseCommand, name='describe')
-@click.option('--json', is_flag=True,
-              help='Show response as JSON. Can not be used with --table '
-                   'parameter')
-@click.pass_context
-@ResponseDecorator(click.echo, 'Can not describe module')
-def describe(ctx, json):
+@ResponseDecorator(click.echo, 'Can not describe module', custom_view=True)
+def describe(json, table):
     """
     Describe all available modules versions and Modular-SDK/CLI version.
     """
-    table = ctx.params.get('table', False)
-    return check_and_describe_modules(table, json)
+    return check_and_describe_modules(table_response=table, json_response=json)
 
 
 @modular.command(cls=BaseCommand, name='get_stats')
@@ -155,12 +150,10 @@ def get_stats(from_month, to_month, display_table, path):
 
 @modular.command(cls=BaseCommand, name='audit')
 @click.option('--group', '-g', type=str,
-              help='Filter by group name. If "--group" and '
-                   '"--from_date" and "--to_date"'
-                   'parameters not specified - will be shown '
-                   'all events for the last 7 days')
-@click.option('--command', '-c', type=str,
-              help='Filter by command name')
+              help='Filter by group name. If "--group" and "--from_date" and '
+                   '"--to_date" parameters not specified - will be shown all '
+                   'events for the last 7 days')
+@click.option('--command', '-c', type=str, help='Filter by command name')
 @click.option('--from_date', '-fd', type=str,
               help='Filter by date from which records are displayed. '
                    'Format yyyy-mm-dd')
@@ -173,21 +166,15 @@ def get_stats(from_month, to_month, display_table, path):
                    'Will have no effect if "--group" not specified')
 @click.option('--invalid', '-I', is_flag=True,
               help='Flag to show only invalid audit events.')
-@click.option('--json', is_flag=True,
-              help='Show response as JSON. Can not be used with --table '
-                   'parameter')
-@click.pass_context
 @ResponseDecorator(click.echo, 'Can not describe audit')
-def audit(ctx, group, command, from_date, to_date, limit, invalid, json):
+def audit(group, command, from_date, to_date, limit, invalid):
     """
     Describes audit
     """
-
-    table = ctx.params.get('table', False)
-
     return audit_handler_instance().describe_audit_handler(
         group=group, command=command, from_date=from_date, to_date=to_date,
-        limit=limit, invalid=invalid, table_response=table, json_response=json)
+        limit=limit, invalid=invalid,
+    )
 
 
 @modular.command(cls=BaseCommand, name='policy_simulator')

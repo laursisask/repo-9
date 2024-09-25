@@ -2,7 +2,9 @@ import click
 
 from modular_api_cli.modular_handler.policy_handler import PolicyHandler
 from modular_api.services import SERVICE_PROVIDER
-from modular_api.helpers.decorators import ResponseDecorator, BaseCommand, produce_audit
+from modular_api.helpers.decorators import (
+    ResponseDecorator, BaseCommand, produce_audit,
+)
 
 
 @click.group()
@@ -54,25 +56,17 @@ def update(policy, policy_path):
               help='Policy name. All existed policies will be described in '
                    'case if parameter not provided')
 @click.option('--expand', '-E', is_flag=True,
-              help='Specify to describe policies with content. '
-                   'Has no effect and always \'True\' if \'--policy\' '
-                   'parameter passed')
-@click.option('--json', is_flag=True,
-              help='Show response as JSON. Can not be used with --table '
-                   'parameter')
-@click.pass_context
+              help='Specify to describe policies with content. Has no effect '
+                   'and always \'True\' if \'--policy\' parameter passed')
 @ResponseDecorator(click.echo, 'Can not describe policy')
-def describe(ctx, policy, expand, json):
+def describe(policy, expand):
     """
     Describes permissions defined in policy.
     """
     if policy:
         expand = True
-
-    table = ctx.params.get('table', False)
     return policy_handler_instance().describe_policy_handler(
-        policy=policy, expand_view=expand, json_response=json,
-        table_response=table
+        policy=policy, expand_view=expand,
     )
 
 

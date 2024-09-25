@@ -8,10 +8,13 @@ from modular_api.models.group_model import Group
 from modular_api.helpers.constants import REMOVED_STATE, ACTIVATED_STATE
 from modular_api.services.group_service import GroupService
 from modular_api.services.policy_service import policy_validation, PolicyService
-from modular_api.helpers.date_utils import convert_datetime_to_human_readable, utc_time_now
+from modular_api.helpers.date_utils import (
+    convert_datetime_to_human_readable, utc_time_now,
+)
 from modular_api.helpers.decorators import CommandResponse
-from modular_api.helpers.exceptions import ModularApiBadRequestException, \
-    ModularApiConflictException
+from modular_api.helpers.exceptions import (
+    ModularApiBadRequestException, ModularApiConflictException,
+)
 from modular_api.helpers.file_helper import open_json_file
 
 line_sep = os.linesep
@@ -117,41 +120,30 @@ class PolicyHandler:
         return CommandResponse(
             message=f'Policy with name \'{policy}\' successfully updated')
 
-    @staticmethod
-    def check_policy_items_exist(policy_items: list) -> None:
-        if not policy_items:
-            raise ModularApiBadRequestException(
-                'Policy(ies) not exists. To add policy please execute '
-                '\'modular policy add\' command')
-
-    def describe_policy_handler(self, policy: str, expand_view: bool,
-                                json_response, table_response
-                                ) -> CommandResponse:
+    def describe_policy_handler(
+            self,
+            policy: str,
+            expand_view: bool = False,
+    ) -> CommandResponse:
         """
         Describes policy content from ModularPolicy table for specified name
         or list all existed policies
         :param expand_view: output will have more policy content
         :param policy: Optional. Policy name which will be described
-        :param json_response: output will be in json format
-        :param table_response: output will be in table format
         :return: CommandResponse
         """
-
-        if table_response and json_response:
-            _LOG.error('Wrong parameters passed')
-            raise ModularApiBadRequestException(
-                'Please specify only one parameter - table or json')
-
         _LOG.info(f'Going to describe policy \'{policy}\'')
         invalid = 0
         if policy:
-            policy_items = self.policy_service.describe_policy(
-                policy_name=policy)
+            item = self.policy_service.describe_policy(policy_name=policy)
+            policy_items = (item, ) if item else ()
         else:
-            policy_items = self.policy_service.scan_policies()
+            policy_items = tuple(self.policy_service.scan_policies())
 
-        self.check_policy_items_exist(policy_items=policy_items)
-        policy_items = policy_items if isinstance(policy_items, list) else [policy_items]
+        if not policy_items:
+            raise ModularApiBadRequestException(
+                'Policy(ies) not exists. To add policy please execute '
+                '\'modular policy add\' command')
         pretty_policies = []
         for policy in policy_items:
             is_compromised = self.policy_service.calculate_policy_hash(
@@ -178,14 +170,10 @@ class PolicyHandler:
         compromised_title = f'Policy(ies) description{os.linesep}WARNING! ' \
                             f'{invalid} compromised policy(ies) have been detected.'
 
-        if json_response:
-            return CommandResponse(
-                message=json.dumps(pretty_policies, indent=4)
-            )
-
         return CommandResponse(
             table_title=compromised_title if invalid else valid_title,
-            items=pretty_policies)
+            items=pretty_policies,
+        )
 
     def delete_policy_handler(self, policy: str) -> CommandResponse:
         """

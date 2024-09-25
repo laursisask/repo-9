@@ -102,6 +102,7 @@ REMOVED_STATE = 'removed'
 STATS_DB_NAME = 'ModularStats.json'
 STATUS = 'status'
 TABLE_VIEW = 'table'
+JSON_VIEW = 'json'
 TIMESTAMP = 'timestamp'
 TOOL_VERSION_MAPPING = """\n{tool}        {version}"""
 WINDOWS = 'nt'

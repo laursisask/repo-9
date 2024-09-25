@@ -13,8 +13,9 @@ _LOG = get_logger(__name__)
 
 class UserService:
     @staticmethod
-    def create_user_entity(username: str, group: str | list[str], password: str,
-                           state: str = ACTIVATED_STATE) -> User:
+    def create_user_entity(username: str, group: str | list[str],
+                           password: str, state: str = ACTIVATED_STATE
+                           ) -> User:
         _LOG.info(f'User \'{username}\' entity creation')
         if isinstance(group, str):
             group = [group]
@@ -39,7 +40,6 @@ class UserService:
     @staticmethod
     def scan_users(filter_condition=None) -> ResultIterator[User]:
         _LOG.info('Going to scan all users')
-        # todo do not use it
         return User.scan(filter_condition=filter_condition)
 
     @staticmethod

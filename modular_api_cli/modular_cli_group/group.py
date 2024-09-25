@@ -2,7 +2,8 @@ import click
 
 from modular_api_cli.modular_handler.group_handler import GroupHandler
 from modular_api.services import SERVICE_PROVIDER
-from modular_api.helpers.decorators import BaseCommand, ResponseDecorator, produce_audit
+from modular_api.helpers.decorators import BaseCommand, ResponseDecorator, \
+    produce_audit
 
 
 @click.group()
@@ -69,18 +70,12 @@ def delete_policy(group, policy):
 @click.option('--group', '-g', type=str,
               help='Group name. If not specified then all existing groups will'
                    'be listed')
-@click.option('--json', is_flag=True,
-              help='Show response as JSON. Can not be used with --table '
-                   'parameter')
-@click.pass_context
 @ResponseDecorator(click.echo, 'Can not describe group')
-def describe(ctx, group, json):
+def describe(group):
     """
     Describes specified group or list all groups
     """
-    table = ctx.params.get('table', False)
-    return group_handler_instance().describe_group_handler(
-        group=group, table_response=table, json_response=json)
+    return group_handler_instance().describe_group_handler(group=group)
 
 
 @group.command(cls=BaseCommand)
