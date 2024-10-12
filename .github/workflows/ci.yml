@@ -287,13 +287,13 @@ jobs:
       run: npx nx run-many --target=build --exclude=docs
     - continue-on-error: true
       if: matrix.node-version == '18.x'
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: playground
         path: packages/playground/dist
     - continue-on-error: true
       if: matrix.node-version == '18.x'
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
         name: docs
         path: packages/docs/build
