@@ -5,7 +5,7 @@ go 1.21.3
 require (
 	github.com/0xPolygonHermez/zkevm-synchronizer-l1 v0.5.4
 	github.com/ethereum/go-ethereum v1.14.5
-	github.com/google/uuid v1.5.0
+	github.com/google/uuid v1.6.0
 	github.com/hermeznetwork/tracerr v0.3.2
 	github.com/holiman/uint256 v1.2.4
 	github.com/invopop/jsonschema v0.12.0
