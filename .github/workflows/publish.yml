@@ -257,7 +257,7 @@ jobs:
     - continue-on-error: true
       id: generate-docs
       name: generate-packages-docs
-      uses: actions/setup-node@v2.1.5
+      uses: actions/setup-node@v4.0.4
       with:
         node-version: '14'
     - continue-on-error: true
