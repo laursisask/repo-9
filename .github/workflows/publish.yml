@@ -250,7 +250,7 @@ jobs:
       run: git clone --single-branch --no-tags --depth 1 -b master https://grafanabot:${{
         secrets.GH_BOT_ACCESS_TOKEN }}@github.com/grafana/website-sync ./.github/actions/website-sync
     - continue-on-error: true
-      uses: actions/cache@v2.1.5
+      uses: actions/cache@v4.1.1
       with:
         key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
         path: '**/node_modules'
