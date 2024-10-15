@@ -12,12 +12,11 @@ require (
 	github.com/nxadm/tail v1.4.11 // MIT
 	github.com/sethvargo/go-githubactions v1.2.0 // Apache 2.0
 	github.com/stretchr/testify v1.9.0 // MIT
-	golang.org/x/oauth2 v0.19.0 // BSD
+	golang.org/x/oauth2 v0.23.0 // BSD
 )
 
 require (
-	cloud.google.com/go/compute v1.24.0 // indirect
-	cloud.google.com/go/compute/metadata v0.2.3 // indirect
+	cloud.google.com/go/compute/metadata v0.3.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.5.2 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/keyvault/internal v0.7.1 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.2.2 // indirect
