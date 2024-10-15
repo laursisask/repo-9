@@ -3091,7 +3091,7 @@ jobs:
     - continue-on-error: true
       uses: actions/checkout@v4
     - continue-on-error: true
-      uses: crate-ci/typos@v1.25.0
+      uses: crate-ci/typos@v1.26.0
     - continue-on-error: true
       run: exit 0
     - name: after
