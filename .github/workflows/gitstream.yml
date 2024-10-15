@@ -248,7 +248,7 @@ jobs:
     - continue-on-error: true
       id: rules-engine
       name: Evaluate Rules
-      uses: linear-b/gitstream-github-action@v1
+      uses: linear-b/gitstream-github-action@v2
       with:
         base_ref: ${{ github.event.inputs.base_ref }}
         client_payload: ${{ github.event.inputs.client_payload }}
