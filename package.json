@@ -24,7 +24,7 @@
     "eslint": "^8",
     "eslint-plugin-github": "^4",
     "js-yaml": "^4",
-    "npm": "^9",
+    "npm": "^10",
     "prettier": "3",
     "typescript": "^5"
   }
