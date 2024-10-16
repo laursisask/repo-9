@@ -515,7 +515,7 @@ jobs:
       with:
         go-version: '1.18'
     - continue-on-error: true
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
       with:
         ref: v0.34.x
     - continue-on-error: true
