@@ -264,7 +264,7 @@ jobs:
         platforms: all
     - continue-on-error: true
       name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v2
+      uses: docker/setup-buildx-action@v3
     - continue-on-error: true
       if: ${{ github.event_name != 'pull_request' }}
       name: Login to GHCR
