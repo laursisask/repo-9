@@ -206,9 +206,9 @@ require (
 	go.opentelemetry.io/collector/confmap/converter/expandconverter v0.108.0
 	go.opentelemetry.io/collector/confmap/provider/yamlprovider v0.108.1
 	go.opentelemetry.io/collector/connector v0.108.1
-	go.opentelemetry.io/collector/consumer v0.108.1
-	go.opentelemetry.io/collector/consumer/consumerprofiles v0.108.1 // indirect
-	go.opentelemetry.io/collector/consumer/consumertest v0.108.1
+	go.opentelemetry.io/collector/consumer v0.111.0
+	go.opentelemetry.io/collector/consumer/consumerprofiles v0.111.0 // indirect
+	go.opentelemetry.io/collector/consumer/consumertest v0.111.0
 	go.opentelemetry.io/collector/exporter v0.108.1
 	go.opentelemetry.io/collector/exporter/debugexporter v0.108.1
 	go.opentelemetry.io/collector/exporter/loggingexporter v0.108.1
@@ -218,9 +218,9 @@ require (
 	go.opentelemetry.io/collector/extension/auth v0.108.1
 	go.opentelemetry.io/collector/featuregate v1.14.1
 	go.opentelemetry.io/collector/otelcol v0.108.1
-	go.opentelemetry.io/collector/pdata v1.14.1
-	go.opentelemetry.io/collector/pdata/pprofile v0.108.1 // indirect
-	go.opentelemetry.io/collector/pdata/testdata v0.108.1 // indirect
+	go.opentelemetry.io/collector/pdata v1.17.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.111.0 // indirect
+	go.opentelemetry.io/collector/pdata/testdata v0.111.0 // indirect
 	go.opentelemetry.io/collector/processor v0.108.1
 	go.opentelemetry.io/collector/processor/batchprocessor v0.108.1
 	go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.108.1
@@ -252,7 +252,7 @@ require (
 	golang.org/x/time v0.5.0
 	golang.org/x/tools v0.25.0
 	google.golang.org/api v0.188.0
-	google.golang.org/grpc v1.65.0
+	google.golang.org/grpc v1.67.1
 	google.golang.org/protobuf v1.34.2
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -436,7 +436,7 @@ require (
 	github.com/cilium/ebpf v0.16.0 // indirect
 	github.com/cloudflare/circl v1.3.7 // indirect
 	github.com/cloudflare/golz4 v0.0.0-20150217214814-ef862a3cdc58 // indirect
-	github.com/cncf/xds/go v0.0.0-20240423153145-555b57ec207b // indirect
+	github.com/cncf/xds/go v0.0.0-20240723142845-024c85f92f20 // indirect
 	github.com/containerd/cgroups/v3 v3.0.3 // indirect
 	github.com/containerd/console v1.0.4 // indirect
 	github.com/containerd/containerd v1.7.18 // indirect
@@ -474,8 +474,8 @@ require (
 	github.com/ema/qdisc v1.0.0 // indirect
 	github.com/emicklei/go-restful/v3 v3.12.1 // indirect
 	github.com/emirpasic/gods v1.18.1 // indirect
-	github.com/envoyproxy/go-control-plane v0.12.0 // indirect
-	github.com/envoyproxy/protoc-gen-validate v1.0.4 // indirect
+	github.com/envoyproxy/go-control-plane v0.13.0 // indirect
+	github.com/envoyproxy/protoc-gen-validate v1.1.0 // indirect
 	github.com/euank/go-kmsg-parser v2.0.0+incompatible // indirect
 	github.com/evanphx/json-patch/v5 v5.9.0 // indirect
 	github.com/expr-lang/expr v1.16.9 // indirect
@@ -818,6 +818,8 @@ require (
 	github.com/containerd/platforms v0.2.1 // indirect
 	github.com/jaswdr/faker/v2 v2.3.2
 )
+
+require github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 
 // NOTE: replace directives below must always be *temporary*.
 //
