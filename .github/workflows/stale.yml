@@ -245,7 +245,7 @@ jobs:
 
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
-      uses: actions/stale@v8.0.0
+      uses: actions/stale@v9.0.0
       with:
         close-issue-message: 'This issue has been closed because it has not received
           any activity in the last 14 days since being marked as ''stale''
