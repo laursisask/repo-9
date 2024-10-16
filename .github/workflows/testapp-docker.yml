@@ -275,7 +275,7 @@ jobs:
         username: ${{ github.actor }}
     - continue-on-error: true
       name: Publish image
-      uses: docker/build-push-action@v3.2.0
+      uses: docker/build-push-action@v6.9.0
       with:
         context: .
         file: ./test/e2e/docker/Dockerfile
