@@ -252,7 +252,7 @@ jobs:
       with:
         egress-policy: audit
     - continue-on-error: true
-      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
+      uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871
     - continue-on-error: true
       id: group-list
       name: Output Group Directories
@@ -514,7 +514,7 @@ jobs:
       with:
         egress-policy: audit
     - continue-on-error: true
-      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29
+      uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871
       with:
         fetch-depth: 0
     - continue-on-error: true
