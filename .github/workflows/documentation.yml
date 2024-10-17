@@ -249,7 +249,7 @@ jobs:
     - continue-on-error: true
       uses: actions/checkout@0ad4b8fadaa221de15dcec353f45205ec38ea70b
     - continue-on-error: true
-      uses: YakDriver/md-check-links@7450f426b758f0bf97f99ceb1aadcf57640a9ede
+      uses: YakDriver/md-check-links@0a295ce2e08c544aae01cccc9b4c6801a8398942
       with:
         base-branch: main
         check-modified-files-only: 'yes'
