@@ -250,7 +250,7 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Checkout the repository
-      uses: actions/checkout@v3.0.0
+      uses: actions/checkout@v4.2.1
     - continue-on-error: true
       if: needs.init.outputs.channel == 'dev'
       name: Set up Python ${{ env.DEFAULT_PYTHON }}
@@ -558,7 +558,7 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Checkout the repository
-      uses: actions/checkout@v3.0.0
+      uses: actions/checkout@v4.2.1
     - continue-on-error: true
       name: Set build additional args
       run: "# Create general tags\nif [[ \"${{ needs.init.outputs.version }}\" =~\
@@ -863,7 +863,7 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Checkout the repository
-      uses: actions/checkout@v3.0.0
+      uses: actions/checkout@v4.2.1
     - continue-on-error: true
       name: Set up Python ${{ env.DEFAULT_PYTHON }}
       uses: actions/setup-python@v3.0.0
@@ -1146,7 +1146,7 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Checkout the repository
-      uses: actions/checkout@v3.0.0
+      uses: actions/checkout@v4.2.1
       with:
         fetch-depth: 0
     - continue-on-error: true
@@ -1435,7 +1435,7 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Checkout the repository
-      uses: actions/checkout@v3.0.0
+      uses: actions/checkout@v4.2.1
     - continue-on-error: true
       if: matrix.registry == 'homeassistant'
       name: Login to DockerHub
@@ -1760,7 +1760,7 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Checkout the repository
-      uses: actions/checkout@v3.0.0
+      uses: actions/checkout@v4.2.1
     - continue-on-error: true
       name: Initialize git
       uses: home-assistant/actions/helpers/git-init@master

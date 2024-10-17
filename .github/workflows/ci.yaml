@@ -269,7 +269,7 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Check out code from GitHub
-      uses: actions/checkout@v3.0.0
+      uses: actions/checkout@v4.2.1
     - continue-on-error: true
       id: core
       name: Filter for core changes
@@ -575,7 +575,7 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Check out code from GitHub
-      uses: actions/checkout@v3.0.0
+      uses: actions/checkout@v4.2.1
     - continue-on-error: true
       name: Download all coverage artifacts
       uses: actions/download-artifact@v2
@@ -839,7 +839,7 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Check out code from GitHub
-      uses: actions/checkout@v3.0.0
+      uses: actions/checkout@v4.2.1
     - continue-on-error: true
       id: python
       name: Set up Python ${{ env.DEFAULT_PYTHON }}
@@ -1119,7 +1119,7 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Check out code from GitHub
-      uses: actions/checkout@v3.0.0
+      uses: actions/checkout@v4.2.1
     - continue-on-error: true
       id: cache-venv
       name: Restore full Python ${{ matrix.python-version }} virtual environment
@@ -1399,7 +1399,7 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Check out code from GitHub
-      uses: actions/checkout@v3.0.0
+      uses: actions/checkout@v4.2.1
     - continue-on-error: true
       id: python
       name: Set up Python ${{ env.DEFAULT_PYTHON }}
@@ -1709,7 +1709,7 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Check out code from GitHub
-      uses: actions/checkout@v3.0.0
+      uses: actions/checkout@v4.2.1
     - continue-on-error: true
       id: python
       name: Set up Python ${{ env.DEFAULT_PYTHON }}
@@ -2022,7 +2022,7 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Check out code from GitHub
-      uses: actions/checkout@v3.0.0
+      uses: actions/checkout@v4.2.1
     - continue-on-error: true
       id: python
       name: Set up Python ${{ env.DEFAULT_PYTHON }}
@@ -2319,7 +2319,7 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Check out code from GitHub
-      uses: actions/checkout@v3.0.0
+      uses: actions/checkout@v4.2.1
     - continue-on-error: true
       id: python
       name: Set up Python ${{ env.DEFAULT_PYTHON }}
@@ -2719,7 +2719,7 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Check out code from GitHub
-      uses: actions/checkout@v3.0.0
+      uses: actions/checkout@v4.2.1
     - continue-on-error: true
       id: cache-venv
       name: Restore full Python ${{ matrix.python-version }} virtual environment
@@ -3019,7 +3019,7 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Check out code from GitHub
-      uses: actions/checkout@v3.0.0
+      uses: actions/checkout@v4.2.1
     - continue-on-error: true
       id: cache-venv
       name: Restore full Python ${{ matrix.python-version }} virtual environment
@@ -3300,7 +3300,7 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Check out code from GitHub
-      uses: actions/checkout@v3.0.0
+      uses: actions/checkout@v4.2.1
     - continue-on-error: true
       id: python
       name: Set up Python ${{ env.DEFAULT_PYTHON }}
@@ -3627,7 +3627,7 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Check out code from GitHub
-      uses: actions/checkout@v3.0.0
+      uses: actions/checkout@v4.2.1
     - continue-on-error: true
       id: generate-python-key
       name: Generate partial Python venv restore key
@@ -3941,7 +3941,7 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Check out code from GitHub
-      uses: actions/checkout@v3.0.0
+      uses: actions/checkout@v4.2.1
     - continue-on-error: true
       id: cache-venv
       name: Restore full Python ${{ matrix.python-version }} virtual environment
@@ -4247,7 +4247,7 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Check out code from GitHub
-      uses: actions/checkout@v3.0.0
+      uses: actions/checkout@v4.2.1
     - continue-on-error: true
       id: cache-venv
       name: Restore full Python ${{ matrix.python-version }} virtual environment
