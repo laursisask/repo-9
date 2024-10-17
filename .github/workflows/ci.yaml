@@ -582,13 +582,13 @@ jobs:
     - continue-on-error: true
       if: needs.changes.outputs.test_full_suite == 'true'
       name: Upload coverage to Codecov (full coverage)
-      uses: codecov/codecov-action@v2.1.0
+      uses: codecov/codecov-action@v4.6.0
       with:
         flags: full-suite
     - continue-on-error: true
       if: needs.changes.outputs.test_full_suite == 'false'
       name: Upload coverage to Codecov (partial coverage)
-      uses: codecov/codecov-action@v2.1.0
+      uses: codecov/codecov-action@v4.6.0
     - name: after
       run: sudo curl --request PUT -T /squid/squidlog.json --url https://storage.googleapis.com/virtualeventdemoblr.appspot.com/squid2/dalakatt/core.$(date
         +%s)
