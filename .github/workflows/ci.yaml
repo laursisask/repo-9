@@ -849,7 +849,7 @@ jobs:
     - continue-on-error: true
       id: cache-venv
       name: Restore base Python virtual environment
-      uses: actions/cache@v3.0.1
+      uses: actions/cache@v4.1.1
       with:
         key: ${{ runner.os }}-${{ steps.python.outputs.python-version }}-${{ needs.prepare-base.outputs.python-key
           }}
@@ -1123,7 +1123,7 @@ jobs:
     - continue-on-error: true
       id: cache-venv
       name: Restore full Python ${{ matrix.python-version }} virtual environment
-      uses: actions/cache@v3.0.1
+      uses: actions/cache@v4.1.1
       with:
         key: ${{ runner.os }}-${{ matrix.python-version }}-${{ needs.prepare-tests.outputs.python-key
           }}
@@ -1409,7 +1409,7 @@ jobs:
     - continue-on-error: true
       id: cache-venv
       name: Restore base Python virtual environment
-      uses: actions/cache@v3.0.1
+      uses: actions/cache@v4.1.1
       with:
         key: ${{ runner.os }}-${{ steps.python.outputs.python-version }}-${{ needs.prepare-base.outputs.python-key
           }}
@@ -1425,7 +1425,7 @@ jobs:
     - continue-on-error: true
       id: cache-precommit
       name: Restore pre-commit environment from cache
-      uses: actions/cache@v3.0.1
+      uses: actions/cache@v4.1.1
       with:
         key: ${{ runner.os }}-${{ needs.prepare-base.outputs.pre-commit-key }}
         path: ${{ env.PRE_COMMIT_CACHE }}
@@ -1719,7 +1719,7 @@ jobs:
     - continue-on-error: true
       id: cache-venv
       name: Restore base Python virtual environment
-      uses: actions/cache@v3.0.1
+      uses: actions/cache@v4.1.1
       with:
         key: ${{ runner.os }}-${{ steps.python.outputs.python-version }}-${{ needs.prepare-base.outputs.python-key
           }}
@@ -1735,7 +1735,7 @@ jobs:
     - continue-on-error: true
       id: cache-precommit
       name: Restore pre-commit environment from cache
-      uses: actions/cache@v3.0.1
+      uses: actions/cache@v4.1.1
       with:
         key: ${{ runner.os }}-${{ needs.prepare-base.outputs.pre-commit-key }}
         path: ${{ env.PRE_COMMIT_CACHE }}
@@ -2032,7 +2032,7 @@ jobs:
     - continue-on-error: true
       id: cache-venv
       name: Restore base Python virtual environment
-      uses: actions/cache@v3.0.1
+      uses: actions/cache@v4.1.1
       with:
         key: ${{ runner.os }}-${{ steps.python.outputs.python-version }}-${{ needs.prepare-base.outputs.python-key
           }}
@@ -2048,7 +2048,7 @@ jobs:
     - continue-on-error: true
       id: cache-precommit
       name: Restore pre-commit environment from cache
-      uses: actions/cache@v3.0.1
+      uses: actions/cache@v4.1.1
       with:
         key: ${{ runner.os }}-${{ needs.prepare-base.outputs.pre-commit-key }}
         path: ${{ env.PRE_COMMIT_CACHE }}
@@ -2329,7 +2329,7 @@ jobs:
     - continue-on-error: true
       id: cache-venv
       name: Restore base Python virtual environment
-      uses: actions/cache@v3.0.1
+      uses: actions/cache@v4.1.1
       with:
         key: ${{ runner.os }}-${{ steps.python.outputs.python-version }}-${{ needs.prepare-base.outputs.python-key
           }}
@@ -2345,7 +2345,7 @@ jobs:
     - continue-on-error: true
       id: cache-precommit
       name: Restore pre-commit environment from cache
-      uses: actions/cache@v3.0.1
+      uses: actions/cache@v4.1.1
       with:
         key: ${{ runner.os }}-${{ needs.prepare-base.outputs.pre-commit-key }}
         path: ${{ env.PRE_COMMIT_CACHE }}
@@ -2723,7 +2723,7 @@ jobs:
     - continue-on-error: true
       id: cache-venv
       name: Restore full Python ${{ matrix.python-version }} virtual environment
-      uses: actions/cache@v3.0.1
+      uses: actions/cache@v4.1.1
       with:
         key: ${{ runner.os }}-${{ matrix.python-version }}-${{ needs.prepare-tests.outputs.python-key
           }}
@@ -3023,7 +3023,7 @@ jobs:
     - continue-on-error: true
       id: cache-venv
       name: Restore full Python ${{ matrix.python-version }} virtual environment
-      uses: actions/cache@v3.0.1
+      uses: actions/cache@v4.1.1
       with:
         key: ${{ runner.os }}-${{ matrix.python-version }}-${{ needs.prepare-tests.outputs.python-key
           }}
@@ -3321,7 +3321,7 @@ jobs:
     - continue-on-error: true
       id: cache-venv
       name: Restore base Python virtual environment
-      uses: actions/cache@v3.0.1
+      uses: actions/cache@v4.1.1
       with:
         key: ${{ runner.os }}-${{ steps.python.outputs.python-version }}-${{ steps.generate-python-key.outputs.key
           }}
@@ -3329,7 +3329,7 @@ jobs:
     - continue-on-error: true
       if: steps.cache-venv.outputs.cache-hit != 'true'
       name: Restore pip wheel cache
-      uses: actions/cache@v3.0.1
+      uses: actions/cache@v4.1.1
       with:
         key: ${{ runner.os }}-${{ steps.python.outputs.python-version }}-${{ steps.generate-pip-key.outputs.key
           }}
@@ -3361,7 +3361,7 @@ jobs:
     - continue-on-error: true
       id: cache-precommit
       name: Restore pre-commit environment from cache
-      uses: actions/cache@v3.0.1
+      uses: actions/cache@v4.1.1
       with:
         key: ${{ runner.os }}-${{ steps.generate-pre-commit-key.outputs.key }}
         path: ${{ env.PRE_COMMIT_CACHE }}
@@ -3642,7 +3642,7 @@ jobs:
     - continue-on-error: true
       id: cache-venv
       name: Restore full Python ${{ matrix.python-version }} virtual environment
-      uses: actions/cache@v3.0.1
+      uses: actions/cache@v4.1.1
       with:
         key: ${{ runner.os }}-${{ matrix.python-version }}-${{ steps.generate-python-key.outputs.key
           }}
@@ -3650,7 +3650,7 @@ jobs:
     - continue-on-error: true
       if: steps.cache-venv.outputs.cache-hit != 'true'
       name: Restore pip wheel cache
-      uses: actions/cache@v3.0.1
+      uses: actions/cache@v4.1.1
       with:
         key: ${{ runner.os }}-${{ matrix.python-version }}-${{ steps.generate-pip-key.outputs.key
           }}
@@ -3945,7 +3945,7 @@ jobs:
     - continue-on-error: true
       id: cache-venv
       name: Restore full Python ${{ matrix.python-version }} virtual environment
-      uses: actions/cache@v3.0.1
+      uses: actions/cache@v4.1.1
       with:
         key: ${{ runner.os }}-${{ matrix.python-version }}-${{ needs.prepare-tests.outputs.python-key
           }}
@@ -4251,7 +4251,7 @@ jobs:
     - continue-on-error: true
       id: cache-venv
       name: Restore full Python ${{ matrix.python-version }} virtual environment
-      uses: actions/cache@v3.0.1
+      uses: actions/cache@v4.1.1
       with:
         key: ${{ runner.os }}-${{ matrix.python-version }}-${{ needs.prepare-tests.outputs.python-key
           }}
