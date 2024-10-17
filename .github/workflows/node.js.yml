@@ -259,7 +259,7 @@ jobs:
           '
     - continue-on-error: true
       name: Use Node.js ${{ matrix.NODE_VERSION }}
-      uses: actions/setup-node@v3.5.0
+      uses: actions/setup-node@v4.0.4
       with:
         node-version: ${{ matrix.NODE_VERSION }}
     - continue-on-error: true
