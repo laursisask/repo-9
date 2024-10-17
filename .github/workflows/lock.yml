@@ -245,7 +245,7 @@ jobs:
 
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
-      uses: dessant/lock-threads@v3
+      uses: dessant/lock-threads@v5
       with:
         exclude-issue-created-before: '2020-10-01T00:00:00Z'
         exclude-pr-created-before: '2020-11-01T00:00:00Z'
