@@ -273,7 +273,7 @@ jobs:
     - continue-on-error: true
       id: core
       name: Filter for core changes
-      uses: dorny/paths-filter@v2.10.2
+      uses: dorny/paths-filter@v3.0.2
       with:
         filters: .core_files.yaml
     - continue-on-error: true
@@ -285,7 +285,7 @@ jobs:
     - continue-on-error: true
       id: integrations
       name: Filter for integration changes
-      uses: dorny/paths-filter@v2.10.2
+      uses: dorny/paths-filter@v3.0.2
       with:
         filters: .integration_paths.yaml
     - continue-on-error: true
