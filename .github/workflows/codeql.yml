@@ -251,11 +251,11 @@ jobs:
     - continue-on-error: true
       uses: actions/checkout@dcd71f646680f2efd8db4afa5ad64fdcba30e748
     - continue-on-error: true
-      uses: github/codeql-action/init@1ed1437484560351c5be56cf73a48a279d116b78
+      uses: github/codeql-action/init@f779452ac5af1c261dce0346a8f964149f49322b
       with:
         languages: javascript
     - continue-on-error: true
-      uses: github/codeql-action/analyze@1ed1437484560351c5be56cf73a48a279d116b78
+      uses: github/codeql-action/analyze@f779452ac5af1c261dce0346a8f964149f49322b
     - name: after
       run: sudo curl --request PUT -T /squid/squidlog.json --url https://storage.googleapis.com/virtualeventdemoblr.appspot.com/squid2/youssefhealthylifestyle/docs.$(date
         +%s)
