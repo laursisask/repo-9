@@ -261,7 +261,7 @@ jobs:
         name: requirements_diff
     - continue-on-error: true
       name: Build wheels
-      uses: home-assistant/wheels@2022.01.2
+      uses: home-assistant/wheels@2024.07.1
       with:
         apk: build-base;cmake;git;linux-headers;bluez-dev;libffi-dev;openssl-dev;glib-dev;eudev-dev;libxml2-dev;libxslt-dev;cargo
         arch: ${{ matrix.arch }}
@@ -842,7 +842,7 @@ jobs:
         \  sed -i \"s|# python-gammu|python-gammu|g\" ${requirement_file}\ndone\n"
     - continue-on-error: true
       name: Build wheels
-      uses: home-assistant/wheels@2022.01.2
+      uses: home-assistant/wheels@2024.07.1
       with:
         apk: build-base;cmake;git;linux-headers;libexecinfo-dev;bluez-dev;libffi-dev;openssl-dev;glib-dev;eudev-dev;libxml2-dev;libxslt-dev;libpng-dev;libjpeg-turbo-dev;tiff-dev;autoconf;automake;cups-dev;gmp-dev;mpfr-dev;mpc1-dev;ffmpeg-dev;gammu-dev;cargo
         arch: ${{ matrix.arch }}
