@@ -758,7 +758,7 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Tidy Jira
-      uses: breathingdust/github-jira-tidy@77daa2cf0f0574bb7be001eb6380939c1af31672
+      uses: breathingdust/github-jira-tidy@b503407f09af5564fd806924bdf4495510d848b6
       with:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         github_release_name: ${{ needs.on-success-or-workflow-dispatch.outputs.release-tag
