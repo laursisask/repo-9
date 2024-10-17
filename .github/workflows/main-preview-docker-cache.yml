@@ -267,7 +267,7 @@ jobs:
         username: ${{ env.NONPROD_REGISTRY_USERNAME }}
     - continue-on-error: true
       name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@94ab11c41e45d028884a99163086648e898eed25
+      uses: docker/setup-buildx-action@c47758b77c9736f4b2ef4073d4d51994fabfe349
     - continue-on-error: true
       name: Check out repo
       uses: actions/checkout@dcd71f646680f2efd8db4afa5ad64fdcba30e748
