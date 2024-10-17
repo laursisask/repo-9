@@ -843,7 +843,7 @@ jobs:
     - continue-on-error: true
       id: python
       name: Set up Python ${{ env.DEFAULT_PYTHON }}
-      uses: actions/setup-python@v3.0.0
+      uses: actions/setup-python@v5.2.0
       with:
         python-version: ${{ env.DEFAULT_PYTHON }}
     - continue-on-error: true
@@ -1403,7 +1403,7 @@ jobs:
     - continue-on-error: true
       id: python
       name: Set up Python ${{ env.DEFAULT_PYTHON }}
-      uses: actions/setup-python@v3.0.0
+      uses: actions/setup-python@v5.2.0
       with:
         python-version: ${{ env.DEFAULT_PYTHON }}
     - continue-on-error: true
@@ -1713,7 +1713,7 @@ jobs:
     - continue-on-error: true
       id: python
       name: Set up Python ${{ env.DEFAULT_PYTHON }}
-      uses: actions/setup-python@v3.0.0
+      uses: actions/setup-python@v5.2.0
       with:
         python-version: ${{ env.DEFAULT_PYTHON }}
     - continue-on-error: true
@@ -2026,7 +2026,7 @@ jobs:
     - continue-on-error: true
       id: python
       name: Set up Python ${{ env.DEFAULT_PYTHON }}
-      uses: actions/setup-python@v3.0.0
+      uses: actions/setup-python@v5.2.0
       with:
         python-version: ${{ env.DEFAULT_PYTHON }}
     - continue-on-error: true
@@ -2323,7 +2323,7 @@ jobs:
     - continue-on-error: true
       id: python
       name: Set up Python ${{ env.DEFAULT_PYTHON }}
-      uses: actions/setup-python@v3.0.0
+      uses: actions/setup-python@v5.2.0
       with:
         python-version: ${{ env.DEFAULT_PYTHON }}
     - continue-on-error: true
@@ -3304,7 +3304,7 @@ jobs:
     - continue-on-error: true
       id: python
       name: Set up Python ${{ env.DEFAULT_PYTHON }}
-      uses: actions/setup-python@v3.0.0
+      uses: actions/setup-python@v5.2.0
       with:
         python-version: ${{ env.DEFAULT_PYTHON }}
     - continue-on-error: true
