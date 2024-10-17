@@ -247,7 +247,7 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: open-pr-stats
-      uses: breathingdust/github-team-slackbot@8f1053f9b472b94e6564ebc499a92136c48ace1f
+      uses: breathingdust/github-team-slackbot@3519d5c7bdd556317b6158aeff5ae9c93c960bdd
       with:
         github_token: ${{ secrets.ORGSCOPED_GITHUB_TOKEN}}
         org: hashicorp
