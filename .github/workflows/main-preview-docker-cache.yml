@@ -255,7 +255,7 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Az CLI login
-      uses: azure/login@66d2e78565ab7af265d2b627085bc34c73ce6abb
+      uses: azure/login@a65d910e8af852a8061c627c456678983e180302
       with:
         creds: ${{ secrets.NONPROD_AZURE_CREDENTIALS }}
     - continue-on-error: true
