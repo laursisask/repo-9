@@ -246,7 +246,7 @@ jobs:
 
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
-      uses: bflad/action-milestone-comment@ae6c9fdf5778064d4e09b4632604a16b7289096c
+      uses: bflad/action-milestone-comment@4618cbf8bf938d31af1c576beeaaa77f486f5af3
       with:
         body: 'This functionality has been released in [${{ github.event.milestone.title
           }} of the Terraform AWS Provider](https://github.com/${{ github.repository
