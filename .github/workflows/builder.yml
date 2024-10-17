@@ -277,13 +277,13 @@ jobs:
       shell: bash
     - continue-on-error: true
       name: Login to DockerHub
-      uses: docker/login-action@v1.14.1
+      uses: docker/login-action@v3.3.0
       with:
         password: ${{ secrets.DOCKERHUB_TOKEN }}
         username: ${{ secrets.DOCKERHUB_USERNAME }}
     - continue-on-error: true
       name: Login to GitHub Container Registry
-      uses: docker/login-action@v1.14.1
+      uses: docker/login-action@v3.3.0
       with:
         password: ${{ secrets.GITHUB_TOKEN }}
         registry: ghcr.io
@@ -568,13 +568,13 @@ jobs:
         \ >> $GITHUB_ENV\nfi\n"
     - continue-on-error: true
       name: Login to DockerHub
-      uses: docker/login-action@v1.14.1
+      uses: docker/login-action@v3.3.0
       with:
         password: ${{ secrets.DOCKERHUB_TOKEN }}
         username: ${{ secrets.DOCKERHUB_USERNAME }}
     - continue-on-error: true
       name: Login to GitHub Container Registry
-      uses: docker/login-action@v1.14.1
+      uses: docker/login-action@v3.3.0
       with:
         password: ${{ secrets.GITHUB_TOKEN }}
         registry: ghcr.io
@@ -1439,14 +1439,14 @@ jobs:
     - continue-on-error: true
       if: matrix.registry == 'homeassistant'
       name: Login to DockerHub
-      uses: docker/login-action@v1.14.1
+      uses: docker/login-action@v3.3.0
       with:
         password: ${{ secrets.DOCKERHUB_TOKEN }}
         username: ${{ secrets.DOCKERHUB_USERNAME }}
     - continue-on-error: true
       if: matrix.registry == 'ghcr.io/home-assistant'
       name: Login to GitHub Container Registry
-      uses: docker/login-action@v1.14.1
+      uses: docker/login-action@v3.3.0
       with:
         password: ${{ secrets.GITHUB_TOKEN }}
         registry: ghcr.io
