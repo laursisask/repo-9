@@ -2198,7 +2198,7 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Apply Size Labels
-      uses: codelytv/pr-size-labeler@f2aafc4d8735009c6de18acefe15eecbfbfae56f
+      uses: codelytv/pr-size-labeler@c7a55a022747628b50f3eb5bf863b9e796b8f274
       with:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         l_label: size/L
