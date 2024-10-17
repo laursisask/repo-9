@@ -246,7 +246,7 @@ jobs:
         sudo sh -c ''echo 1 > /proc/sys/net/ipv4/ip_forward'''
     - continue-on-error: true
       name: Firewatch
-      uses: breathingdust/firewatch@d44ea4b76b7ed38b97cfe8b0388cfc249ef1c7f2
+      uses: breathingdust/firewatch@7d8033475a379d86f7affd1f6a228f3a6e3f7ffb
       with:
         alert_threshold: 10
         github_token: ${{ secrets.GITHUB_TOKEN }}
